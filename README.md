@@ -1,3 +1,22 @@
+# How to use this project
+
+1. Clone this repo into your directory
+2. In a terminal within this project run `npm install`
+3. Run `cd Backend/` and then `node index.js`
+4. Run `cd ..` to go back to the normal directory and then run `npm start`
+5. After it finishes compiling, you should see the website open in a new browser window.
+
+---
+
+## Postgres is required for the backend to work
+
+The backend module is what connects the website to the Postgres database
+
+You can have any .glb or .obj file for the website to render. To add it to the database, follow these steps:
+- Add the id, name, and filepath of your model to the database
+- In `Popup.js` add a new `<Card>` line to the `ul` element containing the rest of the `Card`s, corresponding to the model you want to add. 
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
