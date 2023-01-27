@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useCursor, Icosahedron } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { useControls } from 'leva';
 import create from 'zustand';
 import PopupMenu from './Popup.js';
@@ -13,7 +14,6 @@ import Outline from './Outline.js';
 /*
 TODO LIST
 get individual pieces to light up (test with tram model, that is the only problem one)
-add obj file compatibility
 maybe streamline the card viewing thing, access parts of the database for each card so they dont have to edit code to add models
 fix the alignment of cards when in fullscreen mode
 */
@@ -30,6 +30,7 @@ var sceneRef;
 var objRef;
 
 var sceneUrl;
+var filetype;
 
 const RATE = 0.1;
 
@@ -44,8 +45,15 @@ function Scene(props) {
     });
 
     if (props.modelURL && props.modelURL !== url) {
-        const gltf = useLoader(GLTFLoader, props.modelURL);
-        model = gltf.scene;
+        console.log(props.ext);
+        if(props.ext === "glb"){
+            const gltf = useLoader(GLTFLoader, props.modelURL);
+            model = gltf.scene;
+        }
+        if(props.ext === "obj"){
+            const obj = useLoader(OBJLoader, props.modelURL);
+            model = obj;
+        }
         url = props.modelURL;
     }
 
@@ -99,14 +107,20 @@ export default function App() {
     const { mode } = useControls({ mode: { value: 'translate', options: ['translate', 'rotate'] } });
     // this might be janky but its what i can find to update this component when props change
     const [checkedURL, changeURL] = useState(sceneUrl);
+    const [extension, updateExt] = useState(filetype);
     const callbackFunction = (childData, isUploaded) => {
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
+            filetype = childData.name.split(".")[1];
+            // console.log(filetype);
         }
         else {
             sceneUrl = childData;
+            // since file will always be a glb on the database (for small storage) then we can just set the filetype to glb
+            filetype = "glb";
         }
         changeURL(sceneUrl);
+        updateExt(filetype);
     }
     return (
         <>
@@ -114,7 +128,7 @@ export default function App() {
             <Canvas dpr = {[1, 2]} onPointerMissed = {() => setTarget(null)}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
-                    <Scene modelURL={checkedURL} />
+                    <Scene modelURL={checkedURL} ext={extension} />
                     {target && <TransformControls object = {target} mode = {mode} />}
                     <ambientLight intensity = {0.5} />
                     <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} />
