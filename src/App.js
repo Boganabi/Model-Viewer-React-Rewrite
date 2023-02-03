@@ -9,13 +9,11 @@ import create from 'zustand';
 import PopupMenu from './Popup.js';
 import Loader from './Loader.js';
 import doKey from './KeyboardFunctions.js';
-import Outline from './Outline.js';
 
 /*
 TODO LIST
-get individual pieces to light up (test with tram model, that is the only problem one)
+fix keyboard controls bug where some keys dont do the proper thing
 maybe streamline the card viewing thing, access parts of the database for each card so they dont have to edit code to add models
-fix the alignment of cards when in fullscreen mode
 */
 
 const useStore = create((set) => ({ target: null, setTarget: (target) => set({ target }) }));
@@ -25,8 +23,6 @@ var lastSelected;
 var url = "";
 
 var model;
-var cameraRef;
-var sceneRef;
 var objRef;
 
 var sceneUrl;
@@ -39,13 +35,9 @@ function Scene(props) {
     const [hovered, setHovered] = useState(false);
     useCursor(hovered);
 
-    useThree(({scene, camera}) => {
-        cameraRef = camera;
-        sceneRef = scene;
-    });
+    const { scene, camera } = useThree();
 
     if (props.modelURL && props.modelURL !== url) {
-        console.log(props.ext);
         if(props.ext === "glb"){
             const gltf = useLoader(GLTFLoader, props.modelURL);
             model = gltf.scene;
@@ -61,13 +53,15 @@ function Scene(props) {
     useEffect(() => {
         function handleKeyDown(e) {
             // do action on key press
-            const childIndex = doKey(e, model, cameraRef, sceneRef, objRef, RATE);
+            const childIndex = doKey(e, model, camera, scene, objRef, RATE);
             if(childIndex >= 0){
                 selectedObj(model.children[childIndex]);
             }
         }
 
         document.addEventListener('keydown', handleKeyDown);
+
+        
         
         // cleanup the event listener
         return function cleanup() {
@@ -97,7 +91,9 @@ function selectedObj(object){
     tempHex = object.material.emissive.getHex();
     lastSelected.material.emissive.setHex(tempHex);
 
-    object.material.emissive.setHex(0xff0000);
+    const m = object.material.clone();
+    m.emissive.setHex(0xff0000);
+    object.material = m;
 
     lastSelected = object;
 }

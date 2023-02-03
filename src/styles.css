@@ -123,8 +123,10 @@ input[type="file"]:hover {
   float: left;
   width: 33%;
   padding: 10 10px;
+  padding-right: 30px;
   height: 225px;
   display: flex;
+  justify-content: center;
 }
 
 .something {
