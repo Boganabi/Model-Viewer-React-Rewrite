@@ -32,13 +32,13 @@ export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
 
         case 'D':
             if(model){
-                model.position.z += RATE;   
+                model.position.x += RATE;   
             }
             break;
 
         case 'A':
             if(model){
-                model.position.z -= RATE;   
+                model.position.x -= RATE;   
             }
             break;
 
