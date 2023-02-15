@@ -114,6 +114,27 @@ input[type="file"]:hover {
   box-shadow: 0 8px 16px 0 rgba(0,0,0,0.15), 0 6px 20px 0 rgba(0,0,0,0.11);
 }
 
+.loginArea {
+  justify-content: center;
+  padding: 20px;
+  width: 100%;
+  clear: both;
+}
+
+.inputDesign {
+  padding: 5px;
+  width: 50%;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  border-radius: 5px;
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.1), 0 6px 20px 0 rgba(0,0,0,0.09);
+}
+
+.inputDesign:focus {
+  border: 3px solid #555;
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.15), 0 6px 20px 0 rgba(0,0,0,0.11);
+}
+
 .bottomPage {
   padding-top: 20px;
 }
@@ -124,12 +145,15 @@ input[type="file"]:hover {
   width: 33%;
   padding: 10 10px;
   padding-right: 30px;
-  height: 225px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  /* height: 225px; */
   display: flex;
   justify-content: center;
 }
 
 .something {
+  justify-content: center;
   width: 100%;
   margin: auto;
   padding: 10px;
@@ -156,7 +180,7 @@ input[type="file"]:hover {
   background-color: #929292;
   transition: 0.3s;
   border-radius: 5px; /* rounded corners */
-  height: 200px;
+  /* height: 200px; */
   width: 150px;
 }
 

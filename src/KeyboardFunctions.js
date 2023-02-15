@@ -4,7 +4,6 @@ var model;
 export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
     model = m;
 
-    e.preventDefault();
     switch (e.key) {
         case 'W':
             if(model){
@@ -139,14 +138,14 @@ export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
             break;
 
         case "Tab":
+            e.preventDefault();
             if(objRef){
-                // find a way to call selectedObj function back in app.js
                 if(e.shiftKey){
                     return findNextChild(objRef, -1);
                 }
                 return findNextChild(objRef);
             }
-            return 0;
+            return -1;
 
         default:
             break;

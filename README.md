@@ -12,9 +12,15 @@
 
 The backend module is what connects the website to the Postgres database
 
-You can have any .glb or .obj file for the website to render. To add it to the database, follow these steps:
-- Add the id, name, and filepath of your model to the database
-- In `Popup.js` add a new `<Card>` line to the `ul` element containing the rest of the `Card`s, corresponding to the model you want to add. 
+You can have any .glb or .obj file for the website to render.
+
+To add a model to the database, simply use the login form on the website and once authenticated, upload files from there. 
+- NOTE: this does not really work at the moment, because AWS is not set up. But, the prototype is functional.
+
+# FAQ
+
+How do I seperate pieces of a model to split them apart?
+- In Blender, use the Knife tool to split up the model into the desired parts. Then, select all, and click "Seperate by loose parts"
 
 
 # Getting Started with Create React App

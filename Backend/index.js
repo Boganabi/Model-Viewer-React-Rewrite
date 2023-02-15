@@ -55,6 +55,24 @@ app.get('/testdata', (req, res, next) => {
         })
 })
 
+app.get('/getall', (req, res, next) => {
+    pool.query('SELECT filename FROM test')
+        .then(data => {
+            res.send(data);
+        })
+})
+
+app.post('/testdata', (req, res, next) => {
+    // can temporarily append 'models/' at beginning of filename and '.glb' at the end until AWS is set up
+    const name = req.query["filename"]
+    const fixedName = name.split(".")[0];
+    pool.query('INSERT INTO test (filename, filecall) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\');')
+        .then(result => {
+            console.log(result);
+            res.send("Uploaded successfully");
+        })
+})
+
 // require the Routes API to create a server and run it on port 8000
 const server = app.listen(8000, function () {
     console.log("callback")

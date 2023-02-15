@@ -12,8 +12,8 @@ import doKey from './KeyboardFunctions.js';
 
 /*
 TODO LIST
-fix keyboard controls bug where some keys dont do the proper thing
-maybe streamline the card viewing thing, access parts of the database for each card so they dont have to edit code to add models
+tab and enter work on the login page
+wait for AWS to be set up
 */
 
 const useStore = create((set) => ({ target: null, setTarget: (target) => set({ target }) }));
