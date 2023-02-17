@@ -24,7 +24,8 @@ const auth = getAuth(app);
 export default function Login(props) {
     // how to add firebase login https://firebase.google.com/docs/auth/web/firebaseui 
 
-    
+    // note for future: on popup docs theres a nested part worth looking at
+    // https://react-popup.elazizi.com/component-api
     const [err, setErr] = useState(false);
     const [status, setStatus] = useState("Upload a file here to add it to the database!");
 
@@ -39,7 +40,6 @@ export default function Login(props) {
         signInWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
                 // signed in
-                // setCreds(userCredential);
                 props.callback(userCredential);
                 setErr(false);
             })

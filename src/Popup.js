@@ -7,6 +7,8 @@ import 'reactjs-popup/dist/index.css';
 
 var fileuploaded;
 
+var names = [];
+
 export default function PopupMenu(props){
 
     const uploadedFile = (event) => {
@@ -20,9 +22,6 @@ export default function PopupMenu(props){
 
     const [creds, setCreds] = useState(); // state has to be held here so that it doesnt reset every time the popup is opened
 
-    // const [names, setNames] = useState();
-    var names = [];
-
     useEffect(() => {
         // get all values from the database
         axios({
@@ -31,11 +30,7 @@ export default function PopupMenu(props){
         })
         .then(function (response) {
             // handle success
-            console.log(response);
-            // setNames(response.data.rows);
             names = response.data.rows;
-            console.log(response.data.rows);
-            console.log(names);
         })
         .catch(function (error) {
             // handle error
@@ -46,30 +41,9 @@ export default function PopupMenu(props){
         })
     }, []);
 
-    // function loadAllNames() {
-    //     // get all values from the database
-    //     axios({
-    //         method: 'get',
-    //         url: 'http://localhost:8000/getall',
-    //     })
-    //     .then(function (response) {
-    //         // handle success
-    //         console.log(response);
-    //         setNames(response.data.rows);
-    //         console.log(response.data.rows);
-    //     })
-    //     .catch(function (error) {
-    //         // handle error
-    //         console.log("There was an error from Axios: \n" + error);
-    //     })
-    //     .then(function () {
-    //         // always executed
-    //     })
-    // }
-
     return(
         <div className='upperLeftContainer'>
-            <Popup modal className='popupContent' trigger={<button className='clickable'>&#9881;</button>} >
+            <Popup modal className='popupContent' trigger={<button className='clickable' >&#9881;</button>} onOpen={() => { props.setter(true) }} onClose={() => { props.setter(false) }} >
                 { close => (
                     <div className='centeredBoi'>
                         <button className='close' onClick={ () => close() }>&times;</button>
@@ -82,9 +56,6 @@ export default function PopupMenu(props){
                         <br />
                         <div className="something">
                             <ul id="cards" style={{listStyleType: "none"}}>
-                                {/* <Card filename="fancyskull" modelid="1" callback={e => { databaseFile(e); close() }} />
-                                <Card filename="diamond" modelid="2" callback={e => { databaseFile(e); close() }} />
-                                <Card filename="milw-ep2" modelid="3" callback={e => { databaseFile(e); close() }} /> */}
                                 {
                                     names && names.map((name, i) => {
                                         return <Card key={i} filename={name.filename} modelid={i + 1} callback={e => { databaseFile(e); close() }} />

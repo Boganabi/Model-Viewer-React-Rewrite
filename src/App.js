@@ -12,7 +12,6 @@ import doKey from './KeyboardFunctions.js';
 
 /*
 TODO LIST
-tab and enter work on the login page
 wait for AWS to be set up
 */
 
@@ -27,6 +26,8 @@ var objRef;
 
 var sceneUrl;
 var filetype;
+
+var popupIsOpen = false;
 
 const RATE = 0.1;
 
@@ -53,16 +54,18 @@ function Scene(props) {
     useEffect(() => {
         function handleKeyDown(e) {
             // do action on key press
-            const childIndex = doKey(e, model, camera, scene, objRef, RATE);
-            if(childIndex >= 0){
-                selectedObj(model.children[childIndex]);
+            // need to check if popup is open
+            if(!popupIsOpen){
+                const childIndex = doKey(e, model, camera, scene, objRef, RATE);
+                if(childIndex >= 0){
+                    selectedObj(model.children[childIndex]);
+                }
             }
+            
         }
 
         document.addEventListener('keydown', handleKeyDown);
 
-        
-        
         // cleanup the event listener
         return function cleanup() {
             document.removeEventListener('keydown', handleKeyDown);
@@ -108,7 +111,6 @@ export default function App() {
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
             filetype = childData.name.split(".")[1];
-            // console.log(filetype);
         }
         else {
             sceneUrl = childData;
@@ -118,9 +120,14 @@ export default function App() {
         changeURL(sceneUrl);
         updateExt(filetype);
     }
+
+    function setIsOpen(bool) {
+        popupIsOpen = bool;
+    }
+
     return (
         <>
-            <PopupMenu callback={callbackFunction} />
+            <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen}/>
             <Canvas dpr = {[1, 2]} onPointerMissed = {() => setTarget(null)}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
