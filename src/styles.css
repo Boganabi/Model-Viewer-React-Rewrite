@@ -42,10 +42,14 @@ body {
 
 .centeredBoi {
   text-align: center;
+  height: 60vh;
+  overflow: auto;
 }
 
-.popupContent {
+.popup-content {
   border-radius: 12px;
+  width: 75% !important;
+  /* again, the !imporant is needed here because the popup import overrides it when it needs to be 75% (the import has it at 50%) */
 }
 
 .betterText {
@@ -137,6 +141,7 @@ input[type="file"]:hover {
 
 .bottomPage {
   padding-top: 20px;
+  padding-bottom: 20px;
 }
 
 /* float 4 columns side by side */
@@ -160,16 +165,45 @@ input[type="file"]:hover {
 }
 
 /* responsive columns, so smaller screens can squish them to smaller sizes */
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 900px) {
   .column {
-      width: 100%;
-      display: block;
+      width: 50%;
+      display: flex;
       margin-bottom: 20px;
   }
 
   .row {
       display: initial !important;
   }
+
+  .card {
+    justify-content: center;
+  }
+
+  .something {
+    padding-left: 0px;
+  }
+
+  .fileLabel {
+    width: 40vw;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .column {
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .leva-c-kWgxhW-bCBHqk-fill-false {
+    /* I need the !important here because there is no other way to override the leva class since my css file is loaded first */
+    width: 70vw !important;
+  }
+}
+
+#cards {
+  justify-content: center;
 }
 
 .card {

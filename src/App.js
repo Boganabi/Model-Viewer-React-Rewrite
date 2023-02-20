@@ -12,8 +12,11 @@ import doKey from './KeyboardFunctions.js';
 
 /*
 TODO LIST
+get iframe thingy working to preview models
 wait for AWS to be set up
 */
+
+// end day: 2/?? was last day
 
 const useStore = create((set) => ({ target: null, setTarget: (target) => set({ target }) }));
 
