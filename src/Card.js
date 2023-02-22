@@ -1,7 +1,7 @@
 import React from 'react';
 import axios from 'axios';
 
-import thumbnail from './images/safe.png';
+// import thumbnail from './images/safe.png';
 
 export default function Card(props){
 
@@ -31,12 +31,14 @@ export default function Card(props){
         })
     }
 
+    console.log(props.imgURL);
+
     return (
         <>
             <li className='row'>
                 <div className="column">
                     <div className="card" id="cardSelection" onClick={() => cardClicked(props.modelid)}>
-                        <img src={thumbnail} alt="preview" width="120" height="100" />
+                        <img src={props.imgURL} alt="preview" width="120" height="100" />
                         <div className="container">
                             <h4><b>{props.filename}</b></h4>
                         </div>

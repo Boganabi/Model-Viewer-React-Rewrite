@@ -40,6 +40,16 @@ function Scene(props) {
     useCursor(hovered);
 
     const { scene, camera } = useThree();
+    // const { gl } = useThree();
+
+    // useControls({ 
+    //     screenshot: button(() => { 
+    //         const link = document.createElement('a'); 
+    //         link.setAttribute('download', 'milw-ep2.png'); 
+    //         link.setAttribute('href', gl.domElement.toDataURL('image/png').replace('image/png', 'image/octet-stream'));
+    //         link.click();
+    //     })
+    // });
 
     if (props.modelURL && props.modelURL !== url) {
         if(props.ext === "glb"){
@@ -106,7 +116,12 @@ function selectedObj(object){
 
 export default function App() {
     const { target, setTarget } = useStore();
-    const { mode } = useControls({ mode: { value: 'translate', options: ['translate', 'rotate'] } });
+    const { mode } = useControls({ 
+        mode: { 
+            value: 'translate', 
+            options: ['translate', 'rotate'] 
+        }
+    });
     // this might be janky but its what i can find to update this component when props change
     const [checkedURL, changeURL] = useState(sceneUrl);
     const [extension, updateExt] = useState(filetype);
@@ -131,7 +146,7 @@ export default function App() {
     return (
         <>
             <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen}/>
-            <Canvas dpr = {[1, 2]} onPointerMissed = {() => setTarget(null)}>
+            <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => setTarget(null)}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
                     <Scene modelURL={checkedURL} ext={extension} />

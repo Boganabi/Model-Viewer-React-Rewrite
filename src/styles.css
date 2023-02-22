@@ -147,7 +147,7 @@ input[type="file"]:hover {
 /* float 4 columns side by side */
 .column {
   float: left;
-  width: 33%;
+  width: 20%;
   padding: 10 10px;
   padding-right: 30px;
   padding-top: 10px;
@@ -164,7 +164,26 @@ input[type="file"]:hover {
   padding: 10px;
 }
 
+.databaseUploadArea {
+  width: 100%;
+  clear: both;
+  padding: 20px;
+}
+
 /* responsive columns, so smaller screens can squish them to smaller sizes */
+@media screen and (max-width: 1900px) {
+  .column {
+    width: 25%;
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  .column {
+    width: 33%;
+  }
+}
+
+/* the width where smaller screens start having problems with other elements*/
 @media screen and (max-width: 900px) {
   .column {
       width: 50%;

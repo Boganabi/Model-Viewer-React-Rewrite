@@ -93,11 +93,13 @@ export default function Login(props) {
                 </div> 
             </> }
             { props.creds && <> 
-                <p className='betterText'>Signed in as {props.creds.user.email}</p>
-                <label className='fileLabel' htmlFor="test">
+                <div className='databaseUploadArea'>
+                    <p className='betterText'>Signed in as {props.creds.user.email}</p>
+                    <label className='fileLabel' htmlFor="test">
                         <div className="fileUpload">{status}</div>
-                        <input id="file-upload" type="file" name="file" onChange={e => { uploadToDatabase(e); }}/>
+                        <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/>
                     </label>
+                </div>
             </>}
         </>
     )

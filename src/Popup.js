@@ -30,6 +30,7 @@ export default function PopupMenu(props){
         })
         .then(function (response) {
             // handle success
+            console.log(response);
             names = response.data.rows;
         })
         .catch(function (error) {
@@ -51,19 +52,19 @@ export default function PopupMenu(props){
                         <br />
                         <label className='fileLabel' htmlFor="test">
                             <div className="fileUpload">Click or drop a file here!</div>
-                            <input id="file-upload" type="file" name="file" onChange={e => { uploadedFile(e); close() }}/>
+                            <input id="file-upload" type="file" name="file" accept='.glb, .obj' onChange={e => { uploadedFile(e); close() }}/>
                         </label>
                         <br />
                         <div className="something">
                             <ul id="cards" style={{listStyleType: "none"}}>
                                 {
                                     names && names.map((name, i) => {
-                                        return <Card key={i} filename={name.filename} modelid={i + 1} callback={e => { databaseFile(e); close() }} />
+                                        return <Card key={i} filename={name.filename} modelid={i + 1} imgURL={name.preview} callback={e => { databaseFile(e); close() }} />
                                     })
                                 }
                                 {
                                     !names && <>
-                                        <h2 className='betterText'>Loading models...</h2>
+                                        <h2 className='betterText'>Loading available models...</h2>
                                     </>
                                 }
                             </ul>

@@ -56,7 +56,7 @@ app.get('/testdata', (req, res, next) => {
 })
 
 app.get('/getall', (req, res, next) => {
-    pool.query('SELECT filename FROM test')
+    pool.query('SELECT filename, preview FROM test')
         .then(data => {
             res.send(data);
         })
