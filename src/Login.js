@@ -50,12 +50,16 @@ export default function Login(props) {
     }
     
     function uploadToDatabase(file) {
-        // make POST request to local server
+        // load model and download screenshot
+        props.gotNewModel(file);
+
+        // make POST request to local server and upload with image
         axios({
             method: 'post',
             url: 'http://localhost:8000/testdata',
             params: {
-                filename: file.target.files[0].name
+                filename: file.target.files[0].name.split(".")[0],
+                image: file.target.files[0].name.split(".")[0]
             }
         })
         .then(function (response) {

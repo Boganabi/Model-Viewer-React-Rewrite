@@ -47,7 +47,6 @@ pool.connect((err, client, release) => {
 app.get('/testdata', (req, res, next) => {
     const id = req.query["id"];
     console.log("TEST DATA :");
-    // pool.query('Select * from test')
     pool.query('SELECT filecall FROM test WHERE id=' + id)
         .then(testData => {
             console.log(testData);
@@ -64,9 +63,10 @@ app.get('/getall', (req, res, next) => {
 
 app.post('/testdata', (req, res, next) => {
     // can temporarily append 'models/' at beginning of filename and '.glb' at the end until AWS is set up
-    const name = req.query["filename"]
+    const name = req.query["filename"];
+    const preview = req.query['image']
     const fixedName = name.split(".")[0];
-    pool.query('INSERT INTO test (filename, filecall) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\');')
+    pool.query('INSERT INTO test (filename, filecall, preview) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\', \'images/' + preview + '.png\');')
         .then(result => {
             console.log(result);
             res.send("Uploaded successfully");

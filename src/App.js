@@ -12,11 +12,10 @@ import doKey from './KeyboardFunctions.js';
 
 /*
 TODO LIST
-get iframe thingy working to preview models
 wait for AWS to be set up
 */
 
-// end day: 2/?? was last day
+// end day: 2/22 was last day
 
 const useStore = create((set) => ({ target: null, setTarget: (target) => set({ target }) }));
 
@@ -34,27 +33,33 @@ var popupIsOpen = false;
 
 const RATE = 0.1;
 
+const delay = ms => new Promise(
+    resolve => setTimeout(resolve, ms)
+)
+
 function Scene(props) {
     const setTarget = useStore((state) => state.setTarget);
     const [hovered, setHovered] = useState(false);
     useCursor(hovered);
 
     const { scene, camera } = useThree();
-    // const { gl } = useThree();
-
-    // useControls({ 
-    //     screenshot: button(() => { 
-    //         const link = document.createElement('a'); 
-    //         link.setAttribute('download', 'milw-ep2.png'); 
-    //         link.setAttribute('href', gl.domElement.toDataURL('image/png').replace('image/png', 'image/octet-stream'));
-    //         link.click();
-    //     })
-    // });
+    const { gl } = useThree();
 
     if (props.modelURL && props.modelURL !== url) {
         if(props.ext === "glb"){
             const gltf = useLoader(GLTFLoader, props.modelURL);
             model = gltf.scene;
+            if(props.imgName){
+                // this sucks but i cant think of another way to detect when the model finishes loading, it keeps taking screenshot too early
+                const getScreenshot = async event => {
+                    await delay(1000);
+                    const link = document.createElement('a'); 
+                    link.setAttribute('download', props.imgName.split(".")[0] + '.png'); 
+                    link.setAttribute('href', gl.domElement.toDataURL('image/png').replace('image/png', 'image/octet-stream'));
+                    link.click();
+                }
+                getScreenshot();
+            }
         }
         if(props.ext === "obj"){
             const obj = useLoader(OBJLoader, props.modelURL);
@@ -125,7 +130,8 @@ export default function App() {
     // this might be janky but its what i can find to update this component when props change
     const [checkedURL, changeURL] = useState(sceneUrl);
     const [extension, updateExt] = useState(filetype);
-    const callbackFunction = (childData, isUploaded) => {
+    const [img, setImg] = useState();
+    const callbackFunction = (childData, isUploaded, preview) => {
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
             filetype = childData.name.split(".")[1];
@@ -135,6 +141,7 @@ export default function App() {
             // since file will always be a glb on the database (for small storage) then we can just set the filetype to glb
             filetype = "glb";
         }
+        setImg(preview);
         changeURL(sceneUrl);
         updateExt(filetype);
     }
@@ -145,11 +152,11 @@ export default function App() {
 
     return (
         <>
-            <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen}/>
+            <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} />
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => setTarget(null)}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
-                    <Scene modelURL={checkedURL} ext={extension} />
+                    <Scene modelURL={checkedURL} ext={extension} imgName={img} />
                     {target && <TransformControls object = {target} mode = {mode} />}
                     <ambientLight intensity = {0.5} />
                     <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} />

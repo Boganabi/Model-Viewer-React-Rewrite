@@ -11,13 +11,18 @@ var names = [];
 
 export default function PopupMenu(props){
 
-    const uploadedFile = (event) => {
+    const uploadedFile = (event, flag) => {
         fileuploaded = event.target.files[0];
-        props.callback(fileuploaded, true);
+        if(flag) {
+            props.callback(fileuploaded, true, event.target.files[0].name);
+        }
+        else{
+            props.callback(fileuploaded, true, undefined);
+        }
     }
 
     const databaseFile = (file) => {
-        props.callback(file, false);
+        props.callback(file, false, undefined);
     }
 
     const [creds, setCreds] = useState(); // state has to be held here so that it doesnt reset every time the popup is opened
@@ -30,7 +35,6 @@ export default function PopupMenu(props){
         })
         .then(function (response) {
             // handle success
-            console.log(response);
             names = response.data.rows;
         })
         .catch(function (error) {
@@ -69,7 +73,7 @@ export default function PopupMenu(props){
                                 }
                             </ul>
                         </div>
-                        <Login callback={ setCreds } creds={creds}/>
+                        <Login callback={ setCreds } creds={creds} gotNewModel={e => { uploadedFile(e, true); close() }} />
                         <br />
                         <div className='bottomPage'>
                             <button className='clickable' onClick={ () => close() }>Close</button>

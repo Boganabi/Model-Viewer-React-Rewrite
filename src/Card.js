@@ -1,8 +1,6 @@
 import React from 'react';
 import axios from 'axios';
 
-// import thumbnail from './images/safe.png';
-
 export default function Card(props){
 
     const cardClicked = (id) => {
@@ -30,8 +28,6 @@ export default function Card(props){
             // always executed
         })
     }
-
-    console.log(props.imgURL);
 
     return (
         <>
