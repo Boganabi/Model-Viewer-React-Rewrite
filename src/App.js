@@ -144,6 +144,8 @@ export default function App() {
         setImg(preview);
         changeURL(sceneUrl);
         updateExt(filetype);
+        // should fix bug where switching models does not deselect objects
+        setTarget(null);
     }
 
     function setIsOpen(bool) {
