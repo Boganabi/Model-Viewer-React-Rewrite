@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
-import Card from './Card.js';
-import Login from './Login.js';
-import axios from 'axios';
+import Card from './Card.jsx';
+import Login from './Login.jsx';
+import axios from 'redaxios';
 import 'reactjs-popup/dist/index.css';
 
 var fileuploaded;
@@ -60,6 +60,7 @@ export default function PopupMenu(props){
                         </label>
                         <br />
                         <div className="something">
+                            {/* consider making these load as the user scrolls */}
                             <ul id="cards" style={{listStyleType: "none"}}>
                                 {
                                     names && names.map((name, i) => {

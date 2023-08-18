@@ -1,5 +1,5 @@
 import React from 'react';
-import axios from 'axios';
+import axios from 'redaxios';
 
 export default function Card(props){
 

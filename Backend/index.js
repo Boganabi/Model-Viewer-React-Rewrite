@@ -1,6 +1,8 @@
 // Entry Point of the API server
 
 const express = require('express');
+const multer = require('multer');
+const fs = require('fs');
 
 // creates an Express application, and express() is a top-level function from express module
 
@@ -16,13 +18,16 @@ const pool = new Pool({
     port: 5432
 });
 
+const upload = multer({ dest: './../public/images/' });
+const modelUpload = multer({ dest: './../public/models/'});
+
 app.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:3000');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
 });
 
-// To handle HTTP methods the Body Parser is used, to exteract the entire body portion of an incoming request
+// To handle HTTP methods the Body Parser is used, to extract the entire body portion of an incoming request
 // also exposes it on req.body
 
 const bodyParser = require('body-parser');
@@ -61,16 +66,40 @@ app.get('/getall', (req, res, next) => {
         })
 })
 
+// handle database insert
 app.post('/testdata', (req, res, next) => {
-    // can temporarily append 'models/' at beginning of filename and '.glb' at the end until AWS is set up
     const name = req.query["filename"];
     const preview = req.query['image']
     const fixedName = name.split(".")[0];
     pool.query('INSERT INTO test (filename, filecall, preview) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\', \'images/' + preview + '.png\');')
         .then(result => {
-            console.log(result);
             res.send("Uploaded successfully");
         })
+})
+
+// handles file uploads with multer
+app.post('/upload', upload.single('image'), (req, res, next) => {
+    const imageName = req.file;
+    const originalName = req.body.filename;
+
+    fs.rename(req.file.path, __dirname + '\\..\\public\\images\\' + originalName, (err) => {
+        // if(err) throw err; 
+        console.log("\nFile renamed to " + originalName); 
+        res.send({imageName});
+    });
+})
+
+// handle new model
+app.post('/uploadmodel', modelUpload.single('model'), (req, res, next) => {
+    const modelName = req.file;
+    const originalName = req.body.modelname;
+
+    // rename model filepath
+    fs.rename(req.file.path, __dirname + '\\..\\public\\models\\' + originalName, (err) => {
+        // if(err) throw err; 
+        console.log("\nFile renamed to " + originalName); 
+        res.send({modelName});
+    });
 })
 
 // require the Routes API to create a server and run it on port 8000
