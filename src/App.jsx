@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useState, } from 'react';
 import * as THREE from 'three';
-import axios from 'redaxios';
+// import axios from 'redaxios';
+import axios from 'axios';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useCursor, Icosahedron } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -64,17 +65,41 @@ function Scene(props) {
                     // const arrayBuffer = gltf.parser.buffer;
                     // console.log(arrayBuffer);
                     exporter.parse(
-                        gltf, 
+                        model, 
                         async function (result){
-                            const modelBlob = new Blob([result], { type: 'application/octet-stream' });
+                            // const arrayBuffer = result instanceof ArrayBuffer ? result : result.buffer;
+                            // const modelBlob = new Blob([result], { type: 'application/octet-stream' });
+                            // const modelBlob = new Blob(arrayBuffer, { type: 'application/gltf-buffer' });
+                            var newResult;
+                            var type;
+                            if(result instanceof ArrayBuffer){
+                                newResult = result;
+                                type = "application/octet-stream";
+                            }
+                            else{
+                                newResult = JSON.stringify(result, null, 2);
+                                type = "text/plain";
+                            }
+                            const modelBlob = new Blob([newResult], { type: type });
                             console.log(modelBlob);
                             const form = new FormData();
                             form.append('model', modelBlob);
                             form.append('modelname', props.imgName);
+                            // console.log(props.imgName);
+                            
+                            // for(const val of form.values()){
+                            //     console.log(val);
+                            // }
 
                             // send post request
-                            const request = await axios.post('http://localhost:8000/uploadmodel', form, { headers: {'Content-Type': 'multipart/form-data'} });
-                            console.log(request);
+                            const request = await axios.post('http://localhost:8000/uploadmodel', form, { 
+                                headers: {
+                                    'Content-Type': 'multipart/form-data'
+                                } 
+                            });
+                            // ; boundary=${formData.getBoundary()}
+                            // const request = await axios.post('http://localhost:8000/uploadmodel', form);
+                            // console.log(request);
                         },
                         { binary: true }
                     );
@@ -89,12 +114,12 @@ function Scene(props) {
                     formData.append("image", screenshotBlob);
                     formData.append("filename", props.imgName.split(".")[0] + ".png");
 
-                    for(const val of formData.values()){
-                        console.log(val)
-                    }
+                    // for(const val of formData.values()){
+                    //     console.log(val)
+                    // }
 
                     const result = await axios.post('http://localhost:8000/upload', formData, { headers: {'Content-Type': 'multipart/form-data'} });
-                    console.log(result);
+                    // console.log(result);
 
                     // helper function to convert data URL to blob, written with chatgpt
                     function dataURLtoBlob(dataURL) {

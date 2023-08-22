@@ -64,7 +64,7 @@ export default function PopupMenu(props){
                             <ul id="cards" style={{listStyleType: "none"}}>
                                 {
                                     names && names.map((name, i) => {
-                                        return <Card key={i} filename={name.filename} modelid={i + 1} imgURL={name.preview} callback={e => { databaseFile(e); close() }} />
+                                        return <Card key={i} filename={name.filename} modelid={name.id} imgURL={name.preview} callback={e => { databaseFile(e); close() }} />
                                     })
                                 }
                                 {

@@ -48,6 +48,12 @@ export default function Login(props) {
                 setErr(true);
             })
     }
+
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter'){
+            submittedForm();
+        }
+    }
     
     function uploadToDatabase(file) {
         // load model and download screenshot
@@ -79,7 +85,7 @@ export default function Login(props) {
 
     return (
         <>
-            { props.creds && <>
+            { !props.creds && <>
                 <div className='loginArea'>
                     <h3 className='betterText'>Login for admin functions</h3>
                     <div className='inputWrapper'>
@@ -87,7 +93,7 @@ export default function Login(props) {
                     </div>
                     <br />
                     <div className='inputWrapper'>
-                        <input type="password" placeholder='Password' className='inputDesign' id='passwordField'></input>
+                        <input type="password" placeholder='Password' className='inputDesign' id='passwordField' onKeyDown={handleKeyDown}></input>
                     </div>
                     <br />
                     <button className='clickable' onClick={ () => submittedForm() }>Login</button>
@@ -96,9 +102,9 @@ export default function Login(props) {
                     </> }
                 </div> 
             </> }
-            { !props.creds && <> 
+            { props.creds && <> 
                 <div className='databaseUploadArea'>
-                    <p className='betterText'>Signed in as {/*props.creds.user.email*/}</p>
+                    <p className='betterText'>Signed in as {props.creds.user.email}</p>
                     <label className='fileLabel' htmlFor="test">
                         <div className="fileUpload">{status}</div>
                         <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/>

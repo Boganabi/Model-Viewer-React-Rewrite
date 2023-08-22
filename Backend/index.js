@@ -22,7 +22,8 @@ const upload = multer({ dest: './../public/images/' });
 const modelUpload = multer({ dest: './../public/models/'});
 
 app.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:3000');
+    res.header('Access-Control-Allow-Origin', '*');
+    // res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:3000');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
 });
@@ -60,7 +61,7 @@ app.get('/testdata', (req, res, next) => {
 })
 
 app.get('/getall', (req, res, next) => {
-    pool.query('SELECT filename, preview FROM test')
+    pool.query('SELECT filename, preview, id FROM test')
         .then(data => {
             res.send(data);
         })
@@ -79,6 +80,7 @@ app.post('/testdata', (req, res, next) => {
 
 // handles file uploads with multer
 app.post('/upload', upload.single('image'), (req, res, next) => {
+    console.log("in image upload");
     const imageName = req.file;
     const originalName = req.body.filename;
 
@@ -91,12 +93,15 @@ app.post('/upload', upload.single('image'), (req, res, next) => {
 
 // handle new model
 app.post('/uploadmodel', modelUpload.single('model'), (req, res, next) => {
+    console.log("in model upload");
+    console.log(req.file);
+    console.log(req.file.path);
     const modelName = req.file;
     const originalName = req.body.modelname;
 
     // rename model filepath
     fs.rename(req.file.path, __dirname + '\\..\\public\\models\\' + originalName, (err) => {
-        // if(err) throw err; 
+        if(err) throw err; 
         console.log("\nFile renamed to " + originalName); 
         res.send({modelName});
     });
