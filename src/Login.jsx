@@ -62,7 +62,7 @@ export default function Login(props) {
         // make POST request to local server and upload with image
         axios({
             method: 'post',
-            url: 'http://localhost:8000/testdata',
+            url: 'http://139.182.76.138:8000/testdata',
             params: {
                 filename: file.target.files[0].name.split(".")[0],
                 image: file.target.files[0].name.split(".")[0]
