@@ -31,7 +31,8 @@ export default function PopupMenu(props){
         // get all values from the database
         axios({
             method: 'get',
-            url: 'http://localhost:8000/getall',
+            // url: 'http://localhost:8000/getall',
+            url: '139.182.76.138:8000/getall',
         })
         .then(function (response) {
             // handle success
