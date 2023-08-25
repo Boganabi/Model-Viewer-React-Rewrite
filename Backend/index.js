@@ -85,7 +85,7 @@ app.post('/upload', upload.single('image'), (req, res, next) => {
     const imageName = req.file;
     const originalName = req.body.filename;
 
-    fs.rename(req.file.path, __dirname + '\\..\\public\\images\\' + originalName, (err) => {
+    fs.rename(req.file.path, '.\\' +  __dirname + '.\\..\\public\\images\\' + originalName, (err) => {
         // if(err) throw err; 
         console.log("\nFile renamed to " + originalName); 
         res.send({imageName});
@@ -101,7 +101,7 @@ app.post('/uploadmodel', modelUpload.single('model'), (req, res, next) => {
     const originalName = req.body.modelname;
 
     // rename model filepath
-    fs.rename(req.file.path, __dirname + '\\..\\public\\models\\' + originalName, (err) => {
+    fs.rename(req.file.path, '.\\' + __dirname + '\\..\\public\\models\\' + originalName, (err) => {
         if(err) throw err; 
         console.log("\nFile renamed to " + originalName); 
         res.send({modelName});
