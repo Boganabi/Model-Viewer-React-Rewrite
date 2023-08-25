@@ -9,7 +9,7 @@ export default function Card(props){
         // make GET request to local server
         axios({
             method: 'get',
-            url: 'http://localhost:8000/testdata',
+            url: 'http://139.182.76.138:8000/testdata',
             params: {
                 id: id
             }

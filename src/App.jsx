@@ -92,7 +92,7 @@ function Scene(props) {
                             // }
 
                             // send post request
-                            const request = await axios.post('http://localhost:8000/uploadmodel', form, { 
+                            const request = await axios.post('http://139.182.76.138:8000/uploadmodel', form, { 
                                 headers: {
                                     'Content-Type': 'multipart/form-data'
                                 } 
@@ -118,7 +118,7 @@ function Scene(props) {
                     //     console.log(val)
                     // }
 
-                    const result = await axios.post('http://localhost:8000/upload', formData, { headers: {'Content-Type': 'multipart/form-data'} });
+                    const result = await axios.post('http://139.182.76.138:8000/upload', formData, { headers: {'Content-Type': 'multipart/form-data'} });
                     // console.log(result);
 
                     // helper function to convert data URL to blob, written with chatgpt

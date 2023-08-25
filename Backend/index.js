@@ -22,8 +22,9 @@ const upload = multer({ dest: './../public/images/' });
 const modelUpload = multer({ dest: './../public/models/'});
 
 app.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', '*');
+    // res.header('Access-Control-Allow-Origin', '*');
     // res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:3000');
+    res.header('Access-Control-Allow-Origin', 'http://139.182.76.138:8000');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
 });
