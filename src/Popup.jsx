@@ -32,7 +32,7 @@ export default function PopupMenu(props){
         axios({
             method: 'get',
             // url: 'http://localhost:8000/getall',
-            url: 'http://139.182.76.138:8000/getall',
+            url: '/getall',
         })
         .then(function (response) {
             // handle success
