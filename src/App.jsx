@@ -156,7 +156,6 @@ function Scene(props) {
                     selectedObj(model.children[childIndex]);
                 }
             }
-            
         }
 
         document.addEventListener('keydown', handleKeyDown);
@@ -186,13 +185,18 @@ function selectedObj(object){
 
     objRef = object;
 
-    tempHex = object.material.emissive.getHex();
-    lastSelected.material.emissive.setHex(tempHex);
+    if(object){
+        tempHex = object.material.emissive.getHex();
+        lastSelected.material.emissive.setHex(tempHex);
 
-    const m = object.material.clone();
-    m.emissive.setHex(0xff0000);
-    object.material = m;
-
+        const m = object.material.clone();
+        m.emissive.setHex(0xff0000);
+        object.material = m;
+    }
+    else{
+        lastSelected.material.emissive.setHex(tempHex);
+    }
+    
     lastSelected = object;
 }
 
@@ -232,7 +236,7 @@ export default function App() {
     return (
         <>
             <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} />
-            <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => setTarget(null)}>
+            <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
                     <Scene modelURL={checkedURL} ext={extension} imgName={img} />

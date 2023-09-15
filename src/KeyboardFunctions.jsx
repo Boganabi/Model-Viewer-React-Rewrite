@@ -50,19 +50,23 @@ export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
             break;
 
         case 'ArrowUp':
-            sceneRef.rotateX(RATE);
+            // sceneRef.rotateX(RATE);
+            model.rotateX(RATE);
             break;
 
         case 'ArrowDown':
-            sceneRef.rotateX(-RATE);
+            // sceneRef.rotateX(-RATE);
+            model.rotateX(-RATE);
             break;
 
         case 'ArrowLeft':
-            sceneRef.rotateY(RATE);
+            // sceneRef.rotateY(RATE);
+            model.rotateY(RATE);
             break;
 
         case 'ArrowRight':
-            sceneRef.rotateY(-RATE);
+            // sceneRef.rotateY(-RATE);
+            model.rotateY(-RATE);
             break;
 
         case 'w':
