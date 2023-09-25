@@ -21,13 +21,20 @@ const pool = new Pool({
 const upload = multer({ dest: './../public/images/' });
 const modelUpload = multer({ dest: './../public/models/'});
 
-app.use(function(req, res, next) {
-    // res.header('Access-Control-Allow-Origin', '*');
-    // res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:3000');
-    res.header('Access-Control-Allow-Origin', 'http://139.182.76.138');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    next();
-});
+// app.use(function(req, res, next) {
+//     // res.header('Access-Control-Allow-Origin', '*');
+//     // res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:3000');
+//     res.header('Access-Control-Allow-Origin', 'http://139.182.76.138');
+//     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+//     next();
+// });
+
+let corsOptions = {
+    origin: ['http://139.182.76.138', '139.182.112.89'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept'],
+}
+
+app.use(cors(corsOptions))
 
 // To handle HTTP methods the Body Parser is used, to extract the entire body portion of an incoming request
 // also exposes it on req.body
