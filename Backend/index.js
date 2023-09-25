@@ -1,6 +1,7 @@
 // Entry Point of the API server
 
 const express = require('express');
+const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
 
