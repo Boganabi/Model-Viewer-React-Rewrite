@@ -31,7 +31,7 @@ const modelUpload = multer({ dest: './../public/models/'});
 // });
 
 let corsOptions = {
-    origin: ['http://139.182.76.138', 'http://139.182.112.89'],
+    origin: ['http://139.182.76.138', 'http://139.182.112.89', 'http://127.0.0.1:3000'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
 }
 
