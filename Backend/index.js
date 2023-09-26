@@ -70,7 +70,7 @@ app.get('/testdata', (req, res, next) => {
 })
 
 app.get('/getall', (req, res, next) => {
-    pool.query('SELECT filename, preview, id FROM test')
+    pool.query('SELECT filename, preview, id, classtype FROM test ORDER BY id')
         .then(data => {
             res.send(data);
         })
