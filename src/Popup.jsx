@@ -61,10 +61,14 @@ export default function PopupMenu(props){
                         </label>
                         <br />
                         <div className="something">
-                            {/* consider making these load as the user scrolls */}
+                            {/* consider making these load as the user scrolls 
+                                add searchbar here and to filter class types
+                            */}
                             <ul id="cards" style={{listStyleType: "none"}}>
                                 {
                                     names && names.map((name, i) => {
+                                        // name holds each attribute corresponding to a column in the database
+                                        console.log(name);
                                         return <Card key={i} filename={name.filename} modelid={name.id} imgURL={name.preview} callback={e => { databaseFile(e); close() }} />
                                     })
                                 }
