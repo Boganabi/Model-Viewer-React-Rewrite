@@ -11,6 +11,8 @@ var names = [];
 
 export default function PopupMenu(props){
 
+    const [query, setQuery] = useState("");
+
     const uploadedFile = (event, flag) => {
         fileuploaded = event.target.files[0];
         if(flag) {
@@ -36,6 +38,7 @@ export default function PopupMenu(props){
         })
         .then(function (response) {
             // handle success
+            // consider memoizing this in the future
             names = response.data.rows;
         })
         .catch(function (error) {
@@ -60,16 +63,19 @@ export default function PopupMenu(props){
                             <input id="file-upload" type="file" name="file" accept='.glb, .obj' onChange={e => { uploadedFile(e); close() }}/>
                         </label>
                         <br />
+                        <div className='searchwrapper'>
+                            <input placeholder="Search by class or name..." onChange={event => setQuery(event.target.value)} className='searchbar' />
+                        </div>
                         <div className="something">
                             {/* consider making these load as the user scrolls 
-                                add searchbar here and to filter class types
-                            */}
+                                add searchbar here to filter by class types and name */}
                             <ul id="cards" style={{listStyleType: "none"}}>
                                 {
                                     names && names.map((name, i) => {
                                         // name holds each attribute corresponding to a column in the database
-                                        console.log(name);
-                                        return <Card key={i} filename={name.filename} modelid={name.id} imgURL={name.preview} callback={e => { databaseFile(e); close() }} />
+                                        if(query === "" || name.filename.toLowerCase().includes(query.toLowerCase()) || (name.classtype && name.classtype.toLowerCase().includes(query.toLowerCase()))){
+                                            return <Card key={i} filename={name.filename} modelid={name.id} imgURL={name.preview} callback={e => { databaseFile(e); close() }} />
+                                        }
                                     })
                                 }
                                 {
