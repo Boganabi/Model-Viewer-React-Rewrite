@@ -110,7 +110,7 @@ export default function Login(props) {
                     <p className='betterText'>Signed in as {props.creds.user.email}</p>
                     <label className='fileLabel' htmlFor="test">
                         <div className="fileUpload">{status}</div>
-                        <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/>
+                        {/* <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/> */}
                         <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { setFile(e); setStatus(e.target.files[0].name) }}/>
                     </label>
                     <br />
