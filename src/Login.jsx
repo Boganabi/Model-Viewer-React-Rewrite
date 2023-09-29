@@ -111,10 +111,10 @@ export default function Login(props) {
                     <label className='fileLabel' htmlFor="test">
                         <div className="fileUpload">{status}</div>
                         {/* <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/> */}
-                        <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { setFile(e); }}/>
+                        <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { setFile(e); setStatus(e.target.files[0].name) }}/>
                     </label>
                     <br />
-                    <input placeholder='Class type' className='inputDesign classInput' onChange={e => {setClassType(e); console.log(e)}}/>
+                    <input placeholder='Class type' className='inputDesign classInput' onInput={e => {setClassType(e.target.value); console.log(e.target.value)}}/>
                     <br />
                     <button className='clickable uploadButton' onClick={() => uploadToDatabase(file)} >Upload</button>
                 </div>
