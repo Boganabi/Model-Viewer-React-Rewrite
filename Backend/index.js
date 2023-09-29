@@ -79,9 +79,10 @@ app.get('/getall', (req, res, next) => {
 // handle database insert
 app.post('/testdata', (req, res, next) => {
     const name = req.query["filename"];
-    const preview = req.query['image']
+    const preview = req.query['image'];
+    const classname = req.query['classtype'];
     const fixedName = name.split(".")[0];
-    pool.query('INSERT INTO test (filename, filecall, preview) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\', \'images/' + preview + '.png\');')
+    pool.query('INSERT INTO test (filename, filecall, preview, classType) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\', \'images/' + preview + '.png\', ' + classname + '\');')
         .then(result => {
             res.send("Uploaded successfully");
         })

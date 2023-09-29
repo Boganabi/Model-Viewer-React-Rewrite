@@ -28,6 +28,8 @@ export default function Login(props) {
     // https://react-popup.elazizi.com/component-api
     const [err, setErr] = useState(false);
     const [status, setStatus] = useState("Upload a file here to add it to the database!");
+    const [file, setFile] = useState();
+    const [classType, setClassType] = useState();
 
     function submittedForm() {
 
@@ -65,7 +67,8 @@ export default function Login(props) {
             url: 'http://139.182.76.138:8000/testdata',
             params: {
                 filename: file.target.files[0].name.split(".")[0],
-                image: file.target.files[0].name.split(".")[0]
+                image: file.target.files[0].name.split(".")[0],
+                classtype: classType
             }
         })
         .then(function (response) {
@@ -85,7 +88,7 @@ export default function Login(props) {
 
     return (
         <>
-            { !props.creds && <>
+            { props.creds && <>
                 <div className='loginArea'>
                     <h3 className='betterText'>Login for admin functions</h3>
                     <div className='inputWrapper'>
@@ -102,13 +105,18 @@ export default function Login(props) {
                     </> }
                 </div> 
             </> }
-            { props.creds && <> 
+            { !props.creds && <> 
                 <div className='databaseUploadArea'>
-                    <p className='betterText'>Signed in as {props.creds.user.email}</p>
+                    {/* <p className='betterText'>Signed in as {props.creds.user.email}</p> */}
                     <label className='fileLabel' htmlFor="test">
                         <div className="fileUpload">{status}</div>
-                        <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/>
+                        {/* <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/> */}
+                        <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { setFile(e); }}/>
                     </label>
+                    <br />
+                    <input placeholder='Class type' className='inputDesign classInput' onChange={e => {setClassType(e); console.log(e)}}/>
+                    <br />
+                    <button className='clickable uploadButton' onClick={() => uploadToDatabase(file)} >Upload</button>
                 </div>
             </>}
         </>

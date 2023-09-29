@@ -139,6 +139,14 @@ input[type="file"]:hover {
   box-shadow: 0 8px 16px 0 rgba(0,0,0,0.15), 0 6px 20px 0 rgba(0,0,0,0.11);
 }
 
+.classInput {
+  margin-top: 15px;
+}
+
+.uploadButton {
+  margin-top: 20px;
+}
+
 .bottomPage {
   padding-top: 20px;
   padding-bottom: 20px;
