@@ -27,6 +27,7 @@ export default function Login(props) {
     // note for future: on popup docs theres a nested part worth looking at
     // https://react-popup.elazizi.com/component-api
     const [err, setErr] = useState(false);
+    const [showList, setShowList] = useState(false);
     const [status, setStatus] = useState("Upload a file here to add it to the database!");
     const [file, setFile] = useState();
     const [classType, setClassType] = useState();
@@ -51,6 +52,10 @@ export default function Login(props) {
             })
     }
 
+    function getListElements(){
+        setShowList(true);
+    }
+
     const handleKeyDown = (event) => {
         if (event.key === 'Enter'){
             submittedForm();
@@ -65,6 +70,7 @@ export default function Login(props) {
         axios({
             method: 'post',
             url: 'http://139.182.76.138:8000/testdata',
+            // url: 'http://127.0.0.1:8000/testdata',
             params: {
                 filename: file.target.files[0].name.split(".")[0],
                 image: file.target.files[0].name.split(".")[0],
@@ -88,7 +94,7 @@ export default function Login(props) {
 
     return (
         <>
-            { !props.creds && <>
+            { props.creds && <>
                 <div className='loginArea'>
                     <h3 className='betterText'>Login for admin functions</h3>
                     <div className='inputWrapper'>
@@ -105,9 +111,9 @@ export default function Login(props) {
                     </> }
                 </div> 
             </> }
-            { props.creds && <> 
+            { !props.creds && <> 
                 <div className='databaseUploadArea'>
-                    <p className='betterText'>Signed in as {props.creds.user.email}</p>
+                    {/* <p className='betterText'>Signed in as {props.creds.user.email}</p> */}
                     <label className='fileLabel' htmlFor="test">
                         <div className="fileUpload">{status}</div>
                         {/* <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/> */}
@@ -115,6 +121,8 @@ export default function Login(props) {
                     </label>
                     <br />
                     <input placeholder='Class type' className='inputDesign classInput' onInput={e => {setClassType(e.target.value);}}/>
+                    <br />
+                    <button className='clickable' onClick={() => getListElements()} >Add model labels</button>
                     <br />
                     <button className='clickable uploadButton' onClick={() => uploadToDatabase(file)} >Upload</button>
                 </div>

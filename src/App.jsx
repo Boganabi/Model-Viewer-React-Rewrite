@@ -15,7 +15,10 @@ import doKey from './KeyboardFunctions.jsx';
 
 /*
 TODO LIST
-set up image and model saving
+label matching
+reconstruction matching
+R&D on VR/AR
+email with needs on server/capabilities and link to github
 */
 
 // end day: 2/22 was last day
@@ -143,6 +146,11 @@ function Scene(props) {
             model = obj;
         }
         url = props.modelURL;
+
+        // traverse the model and find the parent that holds the meshes
+        // while(!(model.children[0] instanceof THREE.Mesh)){
+        //     model = model.children[0];
+        // }
     }
 
     // handle a keypress here
@@ -151,9 +159,29 @@ function Scene(props) {
             // do action on key press
             // need to check if popup is open
             if(!popupIsOpen){
-                const childIndex = doKey(e, model, camera, scene, objRef, RATE);
+                // find a cleaner way of doing this
+                // if(model.children[0] instanceof THREE.Mesh){ // kind weird but was having issues unless i did this
+                const parent = findParentModel(model);
+                const childIndex = doKey(e, parent, camera, scene, objRef, RATE);
                 if(childIndex >= 0){
-                    selectedObj(model.children[childIndex]);
+                    // need to get the parent object of all children
+                    selectedObj(parent.children[childIndex]);
+                }
+                // }
+                // else{
+                //     const childIndex = doKey(e, model.children[0].children[0], camera, scene, objRef, RATE);
+                //     if(childIndex >= 0){
+                //         selectedObj(model.children[0].children[0].children[childIndex]);
+                //         console.log(childIndex);
+                //     }
+                // }
+
+                // helper function to get the parts of the model
+                function findParentModel(child){
+                    if (child.children[0] instanceof THREE.Mesh){
+                        return child
+                    }
+                    return findParentModel(child.children[0]);
                 }
             }
         }
@@ -184,17 +212,22 @@ function selectedObj(object){
     }
 
     objRef = object;
+    console.log(object)
 
     if(object){
+
         tempHex = object.material.emissive.getHex();
         lastSelected.material.emissive.setHex(tempHex);
 
         const m = object.material.clone();
         m.emissive.setHex(0xff0000);
         object.material = m;
+        
     }
     else{
-        lastSelected.material.emissive.setHex(tempHex);
+        if(lastSelected){
+           lastSelected.material.emissive.setHex(tempHex); 
+        }
     }
     
     lastSelected = object;

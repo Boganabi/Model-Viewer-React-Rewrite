@@ -6,39 +6,39 @@ export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
 
     switch (e.key) {
         case 'W':
-            if(model){
-                model.position.z += RATE;
-            }
+            //if(model){
+                sceneRef.position.z += RATE;
+            //}
             break;
 
         case 'S':
-            if(model){
-                model.position.z -= RATE;   
-            }
+            //if(model){
+                sceneRef.position.z -= RATE;   
+            //}
             break;
 
         case 'Q':
-            if(model){
-                model.position.y += RATE;   
-            }
+            //if(model){
+                sceneRef.position.y += RATE;   
+            //}
             break;
 
         case 'E':
-            if(model){
-                model.position.y -= RATE;   
-            }
+            //if(model){
+                sceneRef.position.y -= RATE;   
+            //}
             break;
 
         case 'D':
-            if(model){
-                model.position.x += RATE;   
-            }
+            //if(model){
+                sceneRef.position.x += RATE;   
+            //}
             break;
 
         case 'A':
-            if(model){
-                model.position.x -= RATE;   
-            }
+            //if(model){
+                sceneRef.position.x -= RATE;   
+            //}
             break;
 
         case 'n':
@@ -51,22 +51,22 @@ export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
 
         case 'ArrowUp':
             // sceneRef.rotateX(RATE);
-            model.rotateX(RATE);
+            sceneRef.rotateX(RATE);
             break;
 
         case 'ArrowDown':
             // sceneRef.rotateX(-RATE);
-            model.rotateX(-RATE);
+            sceneRef.rotateX(-RATE);
             break;
 
         case 'ArrowLeft':
             // sceneRef.rotateY(RATE);
-            model.rotateY(RATE);
+            sceneRef.rotateY(RATE);
             break;
 
         case 'ArrowRight':
             // sceneRef.rotateY(-RATE);
-            model.rotateY(-RATE);
+            sceneRef.rotateY(-RATE);
             break;
 
         case 'w':
