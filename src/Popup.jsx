@@ -23,6 +23,11 @@ export default function PopupMenu(props){
         }
     }
 
+    function checkData(d) {
+        // console.log(d);
+        props.saveData(d);
+    }
+
     const databaseFile = (file) => {
         props.callback(file, false, undefined);
     }
@@ -52,7 +57,10 @@ export default function PopupMenu(props){
 
     return(
         <div className='upperLeftContainer'>
-            <Popup modal className='popupContent' trigger={<button className='clickable' >&#9881;</button>} onOpen={() => { props.setter(true) }} onClose={() => { props.setter(false) }} >
+            <button className='clickable' onClick={() => props.setter(!props.getOpen)} >&#9881;</button>
+            {/* <Popup modal className='popupContent' trigger={<button className='clickable' >&#9881;</button>} onOpen={() => { props.setter(true) }} onClose={() => { props.setter(false) }} open={props.setOpen} > */}
+            <Popup modal className='popupContent' onOpen={() => { props.setter(true) }} onClose={() => { props.setter(false) }} open={props.getOpen} >
+            {/* <Popup modal className='popupContent' open={props.open} onClose={() => { props.setter(false) }} > */}
                 { close => (
                     <div className='centeredBoi'>
                         <button className='close' onClick={ () => close() }>&times;</button>
@@ -85,7 +93,7 @@ export default function PopupMenu(props){
                                 }
                             </ul>
                         </div>
-                        <Login callback={ setCreds } creds={creds} gotNewModel={e => { uploadedFile(e, true); close() }} />
+                        <Login callback={ setCreds } creds={creds} gotNewModel={e => { uploadedFile(e, true); close() }} updateList={ () => {props.updateList(); close()} } saveUploadData={checkData} savedFormData={props.savedFormData} addLabels={e => { uploadedFile(e); props.updateList(); close() }} labels={props.labels} />
                         <br />
                         <div className='bottomPage'>
                             <button className='clickable' onClick={ () => close() }>Close</button>

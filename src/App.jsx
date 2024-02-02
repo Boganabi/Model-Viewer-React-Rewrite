@@ -10,6 +10,7 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { useControls } from 'leva';
 import create from 'zustand';
 import PopupMenu from './Popup.jsx';
+import Widget from './TopLeftWidget.jsx';
 import Loader from './Loader.jsx';
 import doKey from './KeyboardFunctions.jsx';
 
@@ -31,13 +32,13 @@ var tempHex;
 var lastSelected;
 var url = "";
 
-var model;
 var objRef;
 
 var sceneUrl;
 var filetype;
 
-var popupIsOpen = false;
+// var popupIsOpen = false;
+var widgetShown = false;
 
 const RATE = 0.1;
 
@@ -56,7 +57,9 @@ function Scene(props) {
     if (props.modelURL && props.modelURL !== url) {
         if(props.ext === "glb"){
             const gltf = useLoader(GLTFLoader, props.modelURL);
-            model = gltf.scene;
+            // model = gltf.scene;
+            props.changeModel(gltf.scene);
+            // console.log(model);
 
             if(props.imgName){
                 // this sucks but i cant think of another way to detect when the model finishes loading, it keeps taking screenshot too early
@@ -68,7 +71,7 @@ function Scene(props) {
                     // const arrayBuffer = gltf.parser.buffer;
                     // console.log(arrayBuffer);
                     exporter.parse(
-                        model, 
+                        props.getModel, 
                         async function (result){
                             // const arrayBuffer = result instanceof ArrayBuffer ? result : result.buffer;
                             // const modelBlob = new Blob([result], { type: 'application/octet-stream' });
@@ -143,14 +146,10 @@ function Scene(props) {
         }
         if(props.ext === "obj"){
             const obj = useLoader(OBJLoader, props.modelURL);
-            model = obj;
+            // model = obj;
+            props.changeModel(obj);
         }
         url = props.modelURL;
-
-        // traverse the model and find the parent that holds the meshes
-        // while(!(model.children[0] instanceof THREE.Mesh)){
-        //     model = model.children[0];
-        // }
     }
 
     // handle a keypress here
@@ -158,33 +157,17 @@ function Scene(props) {
         function handleKeyDown(e) {
             // do action on key press
             // need to check if popup is open
-            if(!popupIsOpen){
-                // find a cleaner way of doing this
-                // if(model.children[0] instanceof THREE.Mesh){ // kind weird but was having issues unless i did this
-                const parent = findParentModel(model);
+            if(!props.popupIsOpen && !widgetShown){
+                const parent = findParentModel(props.getModel);
                 const childIndex = doKey(e, parent, camera, scene, objRef, RATE);
                 if(childIndex >= 0){
                     // need to get the parent object of all children
                     selectedObj(parent.children[childIndex]);
                 }
-                // }
-                // else{
-                //     const childIndex = doKey(e, model.children[0].children[0], camera, scene, objRef, RATE);
-                //     if(childIndex >= 0){
-                //         selectedObj(model.children[0].children[0].children[childIndex]);
-                //         console.log(childIndex);
-                //     }
-                // }
-
-                // helper function to get the parts of the model
-                function findParentModel(child){
-                    if (child.children[0] instanceof THREE.Mesh){
-                        return child
-                    }
-                    return findParentModel(child.children[0]);
-                }
             }
         }
+
+        // console.log(props.getModel)
 
         document.addEventListener('keydown', handleKeyDown);
 
@@ -193,11 +176,11 @@ function Scene(props) {
             document.removeEventListener('keydown', handleKeyDown);
         }
     }, []);
-
+    // add this to the primitive model line to set pointer (causes lag spike) onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
-            {model && <primitive {...props} onClick = {(e) => {setTarget(e.object); selectedObj(e.object); e.stopPropagation()} } onPointerOver = {() => setHovered(true)} onPointerOut = {() => setHovered(false)} object = {model} />}
-            {!model &&  <>
+            {props.getModel && <primitive {...props} onClick = {(e) => {setTarget(e.object); selectedObj(e.object); e.stopPropagation()} }  object = {props.getModel} />}
+            {!props.getModel &&  <>
                             <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
                             <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
                         </>}
@@ -212,7 +195,6 @@ function selectedObj(object){
     }
 
     objRef = object;
-    console.log(object)
 
     if(object){
 
@@ -233,6 +215,20 @@ function selectedObj(object){
     lastSelected = object;
 }
 
+// helper function to get the parts of the model
+function findParentModel(child){
+    // console.log(child);
+    if(child){
+        if (child.children[0] instanceof THREE.Mesh){
+            return child
+        }
+        return findParentModel(child.children[0]);
+    }
+    else{
+        return child;
+    }
+}
+
 export default function App() {
     const { target, setTarget } = useStore();
     const { mode } = useControls({ 
@@ -241,10 +237,17 @@ export default function App() {
             options: ['translate', 'rotate'] 
         }
     });
+    const [model, setModel] = useState();
+    const [listShown, setShowList] = useState(false);
+    // save data in login form here so its persistent
+    const [uploadData, setUploadData] = useState();
     // this might be janky but its what i can find to update this component when props change
     const [checkedURL, changeURL] = useState(sceneUrl);
     const [extension, updateExt] = useState(filetype);
     const [img, setImg] = useState();
+    const [numChildren, setNumChildren] = useState(0);
+    const [labels, setLabels] = useState();
+    const [popupIsOpen, setPopupIsOpen] = useState(false);
     const callbackFunction = (childData, isUploaded, preview) => {
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
@@ -260,19 +263,60 @@ export default function App() {
         updateExt(filetype);
         // should fix bug where switching models does not deselect objects
         setTarget(null);
+        setShowList(false);
     }
 
+    useEffect(() => {
+        if(model){
+            setNumChildren(findParentModel(model).children.length);
+        }
+        if(model && listShown === true){
+            const parent = findParentModel(model);
+            selectedObj(parent.children[0]);
+        }
+    }, [model, checkedURL]);
+
     function setIsOpen(bool) {
-        popupIsOpen = bool;
+        // popupIsOpen = bool;
+        setPopupIsOpen(bool);
+    }
+
+    function showList(show){
+        setShowList(show);
+        widgetShown = show;
+    }
+
+    function checkUploadData(newdata){
+        // console.log(newdata);
+        setUploadData(newdata);
+    }
+
+    function getNext(index){
+        const parent = findParentModel(model);
+        selectedObj(parent.children[index]);
+        // console.log(numChildren);
+    }
+
+    function finishLabelling(labels){
+        setShowList(false);
+        widgetShown = false;
+
+        // send labels to login component and show popup
+        setLabels(labels);
+        // setOpenPopup(!openPopup);
+        setPopupIsOpen(true);
+        selectedObj(null);
     }
 
     return (
         <>
-            <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} />
+            {/* <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} /> */}
+            <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} />
+            {numChildren != 0 && listShown && <Widget updateList={ () => showList(false) } childCount={numChildren} nextPiece={getNext} finishModelLabels={finishLabelling} />} 
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
-                    <Scene modelURL={checkedURL} ext={extension} imgName={img} />
+                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} />
                     {target && <TransformControls object = {target} mode = {mode} />}
                     <ambientLight intensity={0.5} />
                     {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}

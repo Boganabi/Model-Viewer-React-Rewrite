@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'redaxios';
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
@@ -27,10 +27,30 @@ export default function Login(props) {
     // note for future: on popup docs theres a nested part worth looking at
     // https://react-popup.elazizi.com/component-api
     const [err, setErr] = useState(false);
-    const [showList, setShowList] = useState(false);
     const [status, setStatus] = useState("Upload a file here to add it to the database!");
     const [file, setFile] = useState();
-    const [classType, setClassType] = useState();
+    const [classType, setClassType] = useState("");
+    // store file and class type to make them persistent when editing model part names
+    const [uploadState, setUploadState] = useState({ classT: classType, fileT: file }); 
+
+    useEffect(() => {
+        // setUploadState(props.savedFormData);
+        if(props.savedFormData){
+            setClassType(props.savedFormData.classT);
+        }
+        if(props.savedFormData){
+            setFile(props.savedFormData.fileT);
+        }
+    }, [props.savedFormData])
+
+    useEffect(() => {
+
+        setUploadState(prevState => ({
+            ...prevState,
+            classT: classType,
+            fileT : file
+        }));
+    }, [classType, file]);
 
     function submittedForm() {
 
@@ -52,10 +72,6 @@ export default function Login(props) {
             })
     }
 
-    function getListElements(){
-        setShowList(true);
-    }
-
     const handleKeyDown = (event) => {
         if (event.key === 'Enter'){
             submittedForm();
@@ -66,6 +82,8 @@ export default function Login(props) {
         // load model and download screenshot
         props.gotNewModel(file);
 
+        console.log(props.labels);
+
         // make POST request to local server and upload with image
         axios({
             method: 'post',
@@ -74,7 +92,8 @@ export default function Login(props) {
             params: {
                 filename: file.target.files[0].name.split(".")[0],
                 image: file.target.files[0].name.split(".")[0],
-                classtype: classType
+                classtype: classType,
+                labels: props.labels
             }
         })
         .then(function (response) {
@@ -120,9 +139,9 @@ export default function Login(props) {
                         <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { setFile(e); setStatus(e.target.files[0].name) }}/>
                     </label>
                     <br />
-                    <input placeholder='Class type' className='inputDesign classInput' onInput={e => {setClassType(e.target.value);}}/>
+                    <input placeholder='Class type' className='inputDesign classInput' onInput={e => {setClassType(e.target.value);}} value={classType}/>
                     <br />
-                    <button className='clickable' onClick={() => getListElements()} >Add model labels</button>
+                    <button className='clickable' onClick={() => { props.updateList(); props.addLabels(file); props.saveUploadData(uploadState); }} >Add model labels</button>
                     <br />
                     <button className='clickable uploadButton' onClick={() => uploadToDatabase(file)} >Upload</button>
                 </div>

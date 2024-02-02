@@ -276,3 +276,12 @@ input[type="file"]:hover {
   padding: 2px 16px;
   cursor: pointer;
 }
+
+.namer {
+  /* padding: 10px 14px; */
+  position: absolute;
+  display: block;
+  z-index: 99;
+  top: 100px;
+  left: 14px;
+}
