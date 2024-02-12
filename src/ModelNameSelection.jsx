@@ -7,7 +7,8 @@ export default function Namer(props){
 
     function handleClick() {
         // store input in list of objects
-        props.names.push({counter : input});
+        // props.names.push({counter : input});
+        props.names.push(input);
 
         // clear input field
         setInput("");
@@ -15,7 +16,7 @@ export default function Namer(props){
         // increment counter 
         if(counter >= props.count - 1){
             // remove the widget from view
-            setCounter(counter + 1);
+            // setCounter(counter + 1);
             props.hideWidget();
         }
         else{

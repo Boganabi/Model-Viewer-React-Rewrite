@@ -13,6 +13,7 @@ import PopupMenu from './Popup.jsx';
 import Widget from './TopLeftWidget.jsx';
 import Loader from './Loader.jsx';
 import doKey from './KeyboardFunctions.jsx';
+import LabelMatching from './LabelMatching.jsx';
 
 /*
 TODO LIST
@@ -39,6 +40,7 @@ var filetype;
 
 // var popupIsOpen = false;
 var widgetShown = false;
+var enableKeys = true;
 
 const RATE = 0.1;
 
@@ -98,7 +100,7 @@ function Scene(props) {
                             // }
 
                             // send post request
-                            const request = await axios.post('http://139.182.76.138:8000/uploadmodel', form, { 
+                            const request = await axios.post(props.backend + 'uploadmodel', form, { 
                                 headers: {
                                     'Content-Type': 'multipart/form-data'
                                 } 
@@ -124,7 +126,7 @@ function Scene(props) {
                     //     console.log(val)
                     // }
 
-                    const result = await axios.post('http://139.182.76.138:8000/upload', formData, { headers: {'Content-Type': 'multipart/form-data'} });
+                    const result = await axios.post(props.backend + 'upload', formData, { headers: {'Content-Type': 'multipart/form-data'} });
                     // console.log(result);
 
                     // helper function to convert data URL to blob, written with chatgpt
@@ -152,12 +154,17 @@ function Scene(props) {
         url = props.modelURL;
     }
 
+    // useEffect(() => {
+    //     console.log(props.enableKeys);
+    // }, [props.enableKeys]);
+
     // handle a keypress here
     useEffect(() => {
         function handleKeyDown(e) {
             // do action on key press
             // need to check if popup is open
-            if(!props.popupIsOpen && !widgetShown){
+            // console.log(enableKeys);
+            if(!props.popupIsOpen && !widgetShown && enableKeys){
                 const parent = findParentModel(props.getModel);
                 const childIndex = doKey(e, parent, camera, scene, objRef, RATE);
                 if(childIndex >= 0){
@@ -230,6 +237,11 @@ function findParentModel(child){
 }
 
 export default function App() {
+
+    const BACKEND = "http://localhost:8000/"; // http://139.182.76.138:8000/
+    let count = 0;
+
+    const inputAttempt = [];
     const { target, setTarget } = useStore();
     const { mode } = useControls({ 
         mode: { 
@@ -248,6 +260,8 @@ export default function App() {
     const [numChildren, setNumChildren] = useState(0);
     const [labels, setLabels] = useState();
     const [popupIsOpen, setPopupIsOpen] = useState(false);
+    const [matchers, setMatchers] = useState();
+    const [score, setScore] = useState({userScore: -1, totalScore: -1});
     const callbackFunction = (childData, isUploaded, preview) => {
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
@@ -276,6 +290,24 @@ export default function App() {
         }
     }, [model, checkedURL]);
 
+    // useEffect(() => {
+    //     if(matchers && model){
+    //         const parent = findParentModel(model);
+    //         selectedObj(parent.children[0]);
+    //     }
+    // }, [model, matchers]);
+
+    function startMatching() {
+        if(matchers && model){
+            const parent = findParentModel(model);
+            selectedObj(parent.children[0]);
+        }
+    }
+
+    // useEffect(() => {
+    //     console.log(keysEnabled);
+    // }, [keysEnabled]);
+
     function setIsOpen(bool) {
         // popupIsOpen = bool;
         setPopupIsOpen(bool);
@@ -291,10 +323,20 @@ export default function App() {
         setUploadData(newdata);
     }
 
-    function getNext(index){
+    function getNext(attempt){
+        count += 1;
         const parent = findParentModel(model);
-        selectedObj(parent.children[index]);
-        // console.log(numChildren);
+        selectedObj(parent.children[count]);
+        inputAttempt.push(attempt);
+        if(count >= parent.children.length){
+            let total = matchers.length;
+            inputAttempt.forEach((element, i) => {
+                if(element != matchers[i]){
+                    total -= 1;
+                }
+            });
+            setScore({userScore: total, totalScore: parent.children.length});
+        }
     }
 
     function finishLabelling(labels){
@@ -308,15 +350,20 @@ export default function App() {
         selectedObj(null);
     }
 
+    function enableDisableKeys(bool){
+        enableKeys = bool;
+    }
+
     return (
         <>
             {/* <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} /> */}
-            <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} />
+            <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} backend={BACKEND} updateLabels={setMatchers} />
             {numChildren != 0 && listShown && <Widget updateList={ () => showList(false) } childCount={numChildren} nextPiece={getNext} finishModelLabels={finishLabelling} />} 
+            {matchers && <LabelMatching nextMatch={getNext} disableKeys={enableDisableKeys} finalScore={score} startMatch={startMatching} />}
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
-                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} />
+                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} />
                     {target && <TransformControls object = {target} mode = {mode} />}
                     <ambientLight intensity={0.5} />
                     {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}

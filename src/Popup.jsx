@@ -39,7 +39,8 @@ export default function PopupMenu(props){
         axios({
             method: 'get',
             // url: 'http://localhost:8000/getall',
-            url: 'http://139.182.76.138:8000/getall',
+            // url: 'http://139.182.76.138:8000/getall',
+            url: props.backend + 'getall',
         })
         .then(function (response) {
             // handle success
@@ -82,7 +83,7 @@ export default function PopupMenu(props){
                                     names && names.map((name, i) => {
                                         // name holds each attribute corresponding to a column in the database
                                         if(query === "" || name.filename.toLowerCase().includes(query.toLowerCase()) || (name.classtype && name.classtype.toLowerCase().includes(query.toLowerCase()))){
-                                            return <Card key={i} filename={name.filename} modelid={name.id} imgURL={name.preview} callback={e => { databaseFile(e); close() }} />
+                                            return <Card backend={props.backend} key={i} filename={name.filename} modelid={name.id} imgURL={name.preview} callback={e => { databaseFile(e); close() }} matchers={props.updateLabels} />
                                         }
                                     })
                                 }
@@ -93,7 +94,7 @@ export default function PopupMenu(props){
                                 }
                             </ul>
                         </div>
-                        <Login callback={ setCreds } creds={creds} gotNewModel={e => { uploadedFile(e, true); close() }} updateList={ () => {props.updateList(); close()} } saveUploadData={checkData} savedFormData={props.savedFormData} addLabels={e => { uploadedFile(e); props.updateList(); close() }} labels={props.labels} />
+                        <Login callback={ setCreds } creds={creds} backend={props.backend} gotNewModel={e => { uploadedFile(e, true); close() }} updateList={ () => {props.updateList(); close()} } saveUploadData={checkData} savedFormData={props.savedFormData} addLabels={e => { uploadedFile(e); props.updateList(); close() }} labels={props.labels} />
                         <br />
                         <div className='bottomPage'>
                             <button className='clickable' onClick={ () => close() }>Close</button>

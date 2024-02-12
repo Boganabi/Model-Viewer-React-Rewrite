@@ -9,7 +9,7 @@ export default function Card(props){
         // make GET request to local server
         axios({
             method: 'get',
-            url: 'http://139.182.76.138:8000/testdata',
+            url: props.backend + 'testdata',
             params: {
                 id: id
             }
@@ -17,6 +17,8 @@ export default function Card(props){
         .then(function (response) {
             // handle success
             const newURL = "/" + response.data[0].filecall;
+
+            props.matchers(response.data[0].labels)
 
             props.callback(newURL);
         })

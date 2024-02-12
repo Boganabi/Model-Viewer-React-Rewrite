@@ -62,7 +62,7 @@ pool.connect((err, client, release) => {
 app.get('/testdata', (req, res, next) => {
     const id = req.query["id"];
     console.log("TEST DATA :");
-    pool.query('SELECT filecall FROM test WHERE id=' + id)
+    pool.query('SELECT filecall, labels FROM test WHERE id=' + id)
         .then(testData => {
             console.log(testData);
             res.send(testData.rows);
@@ -82,7 +82,8 @@ app.post('/testdata', (req, res, next) => {
     const preview = req.query['image'];
     const classname = req.query['classtype'];
     const fixedName = name.split(".")[0];
-    const labels = req.query["labels"];
+    const labels = req.query["labels"] === "undefined" ? '{}' : '{' + req.query["labels"] + '}';
+    console.log(labels);
     pool.query('INSERT INTO test (filename, filecall, preview, classType, labels) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\', \'images/' + preview + '.png\', \'' + classname + '\', \'' + labels + '\');')
         .then(result => {
             res.send("Uploaded successfully");

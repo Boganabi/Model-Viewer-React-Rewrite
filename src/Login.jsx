@@ -87,13 +87,17 @@ export default function Login(props) {
         // make POST request to local server and upload with image
         axios({
             method: 'post',
-            url: 'http://139.182.76.138:8000/testdata',
+            // url: 'http://139.182.76.138:8000/testdata',
             // url: 'http://127.0.0.1:8000/testdata',
+            url: props.backend + 'testdata',
             params: {
                 filename: file.target.files[0].name.split(".")[0],
                 image: file.target.files[0].name.split(".")[0],
                 classtype: classType,
                 labels: props.labels
+            },
+            headers: {
+                'Content-Type': 'application/json',
             }
         })
         .then(function (response) {
