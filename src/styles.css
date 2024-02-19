@@ -294,3 +294,11 @@ input[type="file"]:hover {
   top: 14px;
   left: 100px;
 }
+
+.reconstruction {
+  position: absolute;
+  display: block;
+  z-index: 99;
+  top: 65px;
+  left: 14px;
+}

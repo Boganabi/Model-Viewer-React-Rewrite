@@ -149,7 +149,10 @@ export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
                 }
                 return findNextChild(objRef);
             }
-            return -1;
+            else{
+                return 0;
+            }
+            // return -1;
 
         default:
             break;

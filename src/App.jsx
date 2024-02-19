@@ -14,10 +14,11 @@ import Widget from './TopLeftWidget.jsx';
 import Loader from './Loader.jsx';
 import doKey from './KeyboardFunctions.jsx';
 import LabelMatching from './LabelMatching.jsx';
+import Reconstruction from './Reconstruction.jsx';
 
 /*
 TODO LIST
-label matching
+label matching - DONE
 reconstruction matching
 R&D on VR/AR
 email with needs on server/capabilities and link to github
@@ -34,6 +35,7 @@ var lastSelected;
 var url = "";
 
 var objRef;
+var modelRef; // weird dumb bug with scene and props
 
 var sceneUrl;
 var filetype;
@@ -41,6 +43,10 @@ var filetype;
 // var popupIsOpen = false;
 var widgetShown = false;
 var enableKeys = true;
+
+// kept here due to app rerendering
+const reconstructedObjs = new Set();
+let reconstrucScore = 0;
 
 const RATE = 0.1;
 
@@ -154,27 +160,26 @@ function Scene(props) {
         url = props.modelURL;
     }
 
-    // useEffect(() => {
-    //     console.log(props.enableKeys);
-    // }, [props.enableKeys]);
-
     // handle a keypress here
     useEffect(() => {
         function handleKeyDown(e) {
             // do action on key press
             // need to check if popup is open
-            // console.log(enableKeys);
+            // console.log(props.getModel); // commented bc theres a bug in props where this is not getting updated
             if(!props.popupIsOpen && !widgetShown && enableKeys){
-                const parent = findParentModel(props.getModel);
+                // console.log(modelRef);
+                // const parent = findParentModel(props.getModel);
+                const parent = findParentModel(modelRef);
                 const childIndex = doKey(e, parent, camera, scene, objRef, RATE);
                 if(childIndex >= 0){
                     // need to get the parent object of all children
-                    selectedObj(parent.children[childIndex]);
+                    const newSelectedObject = parent.children[childIndex]
+                    selectedObj(newSelectedObject);
+                    setTarget(newSelectedObject);
                 }
+                props.snap();
             }
         }
-
-        // console.log(props.getModel)
 
         document.addEventListener('keydown', handleKeyDown);
 
@@ -183,7 +188,7 @@ function Scene(props) {
             document.removeEventListener('keydown', handleKeyDown);
         }
     }, []);
-    // add this to the primitive model line to set pointer (causes lag spike) onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
+    // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
             {props.getModel && <primitive {...props} onClick = {(e) => {setTarget(e.object); selectedObj(e.object); e.stopPropagation()} }  object = {props.getModel} />}
@@ -262,6 +267,7 @@ export default function App() {
     const [popupIsOpen, setPopupIsOpen] = useState(false);
     const [matchers, setMatchers] = useState();
     const [score, setScore] = useState({userScore: -1, totalScore: -1});
+    const [reconstruct, setReconstruct] = useState({currScore: 0, total: 0});
     const callbackFunction = (childData, isUploaded, preview) => {
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
@@ -282,20 +288,17 @@ export default function App() {
 
     useEffect(() => {
         if(model){
-            setNumChildren(findParentModel(model).children.length);
+            const newChildren = findParentModel(model).children.length;
+            setNumChildren(newChildren);
+            setReconstruct({currScore: 0, total: newChildren});
         }
         if(model && listShown === true){
             const parent = findParentModel(model);
             selectedObj(parent.children[0]);
         }
+        // console.log(model);
+        modelRef = model;
     }, [model, checkedURL]);
-
-    // useEffect(() => {
-    //     if(matchers && model){
-    //         const parent = findParentModel(model);
-    //         selectedObj(parent.children[0]);
-    //     }
-    // }, [model, matchers]);
 
     function startMatching() {
         if(matchers && model){
@@ -303,10 +306,6 @@ export default function App() {
             selectedObj(parent.children[0]);
         }
     }
-
-    // useEffect(() => {
-    //     console.log(keysEnabled);
-    // }, [keysEnabled]);
 
     function setIsOpen(bool) {
         // popupIsOpen = bool;
@@ -354,17 +353,75 @@ export default function App() {
         enableKeys = bool;
     }
 
+    function scramble(){
+        // console.log("boop");
+        // setReconstruct({...reconstruct, currScore: 1});
+        const min = -3;
+        const max = 3;
+        const parent = findParentModel(model);
+        parent.children.forEach((part) => {
+            const randX = min + (Math.random() * (max - min));
+            const randY = min + (Math.random() * (max - min));
+            const randZ = min + (Math.random() * (max - min));
+            part.translateX(randX);
+            part.translateY(randY);
+            part.translateZ(randZ);
+        })
+    }
+
+    function checkSnapObject(){
+        if(objRef){
+            // console.log(target.position);
+            const zero = new THREE.Vector3(0,0,0)
+            // const dist = target.position.distanceTo(zero);
+            const dist = objRef.position.distanceTo(zero);
+            // console.log(dist);
+            if(dist < 0.1){
+                // target.position.set(0,0,0);
+                objRef.position.set(0,0,0);
+                // if(!reconstructedObjs.has(target)){
+                //     reconstructedObjs.add(target);
+                //     reconstrucScore += 1;
+                //     setReconstruct({...reconstruct, currScore: reconstrucScore});
+                // }
+                // console.log(reconstrucScore);
+                if(reconstructedObjs.has(objRef.uuid) === false){
+                    reconstructedObjs.add(objRef.uuid);
+                    reconstrucScore += 1;
+                    setReconstruct({...reconstruct, currScore: reconstrucScore});
+                    console.log(objRef.uuid);
+                    console.log(reconstrucScore);
+                }
+                // console.log(reconstrucScore);
+                // console.log(reconstructedObjs);
+            }
+            else{
+                // if(reconstructedObjs.has(target)){
+                //     reconstructedObjs.delete(target);
+                //     reconstrucScore -= 1;
+                // }
+                if(reconstructedObjs.has(objRef.uuid)){
+                    reconstructedObjs.delete(objRef.uuid);
+                    reconstrucScore -= 1;
+                    console.log("removed");
+                    console.log(reconstructedObjs);
+                }
+            }
+        }
+    }
+
     return (
         <>
             {/* <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} /> */}
             <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} backend={BACKEND} updateLabels={setMatchers} />
             {numChildren != 0 && listShown && <Widget updateList={ () => showList(false) } childCount={numChildren} nextPiece={getNext} finishModelLabels={finishLabelling} />} 
             {matchers && <LabelMatching nextMatch={getNext} disableKeys={enableDisableKeys} finalScore={score} startMatch={startMatching} />}
+            {!listShown && !matchers && model && <Reconstruction scrambler={scramble} reconScore={reconstruct} />}
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
-                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} />
-                    {target && <TransformControls object = {target} mode = {mode} />}
+                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} />
+                    {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()}/>}
                     <ambientLight intensity={0.5} />
                     {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
                     <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={2} castShadow />
@@ -374,6 +431,10 @@ export default function App() {
                         RIGHT: THREE.MOUSE.ROTATE,
                     }}
                     />
+                    <mesh position={[0,0,0]} scale={0.05} >
+                        <sphereGeometry />
+                        <meshStandardMaterial color="black" transparent />
+                    </mesh>
                 </Suspense>
             </Canvas>
         </>
