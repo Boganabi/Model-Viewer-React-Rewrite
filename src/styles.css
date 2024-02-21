@@ -151,6 +151,7 @@ input[type="file"]:hover {
 .bottomPage {
   padding-top: 20px;
   padding-bottom: 20px;
+  clear: both;
 }
 
 /* float 4 columns side by side */

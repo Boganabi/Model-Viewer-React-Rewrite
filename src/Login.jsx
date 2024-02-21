@@ -117,7 +117,7 @@ export default function Login(props) {
 
     return (
         <>
-            { props.creds && <>
+            { !props.creds && <>
                 <div className='loginArea'>
                     <h3 className='betterText'>Login for admin functions</h3>
                     <div className='inputWrapper'>
@@ -134,9 +134,9 @@ export default function Login(props) {
                     </> }
                 </div> 
             </> }
-            { !props.creds && <> 
+            { props.creds && <> 
                 <div className='databaseUploadArea'>
-                    {/* <p className='betterText'>Signed in as {props.creds.user.email}</p> */}
+                    <p className='betterText'>Signed in as {props.creds.user.email}</p>
                     <label className='fileLabel' htmlFor="test">
                         <div className="fileUpload">{status}</div>
                         {/* <input id="file-upload" type="file" name="file" accept=".glb" onChange={e => { uploadToDatabase(e); }}/> */}

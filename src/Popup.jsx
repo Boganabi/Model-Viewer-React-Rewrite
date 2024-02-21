@@ -72,6 +72,7 @@ export default function PopupMenu(props){
                             <input id="file-upload" type="file" name="file" accept='.glb, .obj' onChange={e => { uploadedFile(e); close() }}/>
                         </label>
                         <br />
+                        <Login callback={ setCreds } creds={creds} backend={props.backend} gotNewModel={e => { uploadedFile(e, true); close() }} updateList={ () => {props.updateList(); close()} } saveUploadData={checkData} savedFormData={props.savedFormData} addLabels={e => { uploadedFile(e); props.updateList(); close() }} labels={props.labels} />
                         <div className='searchwrapper'>
                             <input placeholder="Search by class or name..." onChange={event => setQuery(event.target.value)} className='searchbar' />
                         </div>
@@ -94,7 +95,8 @@ export default function PopupMenu(props){
                                 }
                             </ul>
                         </div>
-                        <Login callback={ setCreds } creds={creds} backend={props.backend} gotNewModel={e => { uploadedFile(e, true); close() }} updateList={ () => {props.updateList(); close()} } saveUploadData={checkData} savedFormData={props.savedFormData} addLabels={e => { uploadedFile(e); props.updateList(); close() }} labels={props.labels} />
+                        {/* <Login callback={ setCreds } creds={creds} backend={props.backend} gotNewModel={e => { uploadedFile(e, true); close() }} updateList={ () => {props.updateList(); close()} } saveUploadData={checkData} savedFormData={props.savedFormData} addLabels={e => { uploadedFile(e); props.updateList(); close() }} labels={props.labels} /> */}
+                        <br />
                         <br />
                         <div className='bottomPage'>
                             <button className='clickable' onClick={ () => close() }>Close</button>

@@ -19,8 +19,8 @@ import Reconstruction from './Reconstruction.jsx';
 /*
 TODO LIST
 label matching - DONE
-reconstruction matching
-R&D on VR/AR
+reconstruction matching - DONE
+R&D on VR/AR - https://threejs.org/docs/#manual/en/introduction/How-to-create-VR-content
 email with needs on server/capabilities and link to github
 */
 
