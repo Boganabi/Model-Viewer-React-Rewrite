@@ -11,6 +11,10 @@ export default function(props) {
     }
 
     useEffect(() => {
+        setShowText(false);
+    }, [props.model]);
+
+    useEffect(() => {
         const newScore = "Score: " + props.reconScore.currScore + "/" + props.reconScore.total;
         setScore(newScore);
     }, [props.reconScore]);

@@ -291,6 +291,7 @@ export default function App() {
             const newChildren = findParentModel(model).children.length;
             setNumChildren(newChildren);
             setReconstruct({currScore: 0, total: newChildren});
+            reconstrucScore = 0;
         }
         if(model && listShown === true){
             const parent = findParentModel(model);
@@ -389,8 +390,8 @@ export default function App() {
                     reconstructedObjs.add(objRef.uuid);
                     reconstrucScore += 1;
                     setReconstruct({...reconstruct, currScore: reconstrucScore});
-                    console.log(objRef.uuid);
-                    console.log(reconstrucScore);
+                    // console.log(objRef.uuid);
+                    // console.log(reconstrucScore);
                 }
                 // console.log(reconstrucScore);
                 // console.log(reconstructedObjs);
@@ -403,8 +404,8 @@ export default function App() {
                 if(reconstructedObjs.has(objRef.uuid)){
                     reconstructedObjs.delete(objRef.uuid);
                     reconstrucScore -= 1;
-                    console.log("removed");
-                    console.log(reconstructedObjs);
+                    // console.log("removed");
+                    // console.log(reconstructedObjs);
                 }
             }
         }
@@ -416,7 +417,7 @@ export default function App() {
             <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} backend={BACKEND} updateLabels={setMatchers} />
             {numChildren != 0 && listShown && <Widget updateList={ () => showList(false) } childCount={numChildren} nextPiece={getNext} finishModelLabels={finishLabelling} />} 
             {matchers && <LabelMatching nextMatch={getNext} disableKeys={enableDisableKeys} finalScore={score} startMatch={startMatching} />}
-            {!listShown && !matchers && model && <Reconstruction scrambler={scramble} reconScore={reconstruct} />}
+            {!listShown && !matchers && model && <Reconstruction scrambler={scramble} reconScore={reconstruct} model={model} />}
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
