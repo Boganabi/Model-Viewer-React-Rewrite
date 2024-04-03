@@ -7,6 +7,7 @@ import { OrbitControls, TransformControls, useCursor, Icosahedron } from '@react
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { useControls } from 'leva';
 import create from 'zustand';
 import PopupMenu from './Popup.jsx';
@@ -15,13 +16,12 @@ import Loader from './Loader.jsx';
 import doKey from './KeyboardFunctions.jsx';
 import LabelMatching from './LabelMatching.jsx';
 import Reconstruction from './Reconstruction.jsx';
+import SelectionDropdown from './SelectionDropdown.jsx';
 
 /*
 TODO LIST
-label matching - DONE
-reconstruction matching - DONE
-R&D on VR/AR - https://threejs.org/docs/#manual/en/introduction/How-to-create-VR-content
-email with needs on server/capabilities and link to github
+index list on the side as a dropdown
+stl support
 */
 
 // end day: 2/22 was last day
@@ -157,6 +157,10 @@ function Scene(props) {
             // model = obj;
             props.changeModel(obj);
         }
+        if(props.ext === "stl"){
+            const s = useLoader(STLLoader, props,modelURL);
+            props.changeModel(s);
+        }
         url = props.modelURL;
     }
 
@@ -263,6 +267,7 @@ export default function App() {
     const [extension, updateExt] = useState(filetype);
     const [img, setImg] = useState();
     const [numChildren, setNumChildren] = useState(0);
+    const [children, setChildren] = useState();
     const [labels, setLabels] = useState();
     const [popupIsOpen, setPopupIsOpen] = useState(false);
     const [matchers, setMatchers] = useState();
@@ -288,9 +293,10 @@ export default function App() {
 
     useEffect(() => {
         if(model){
-            const newChildren = findParentModel(model).children.length;
-            setNumChildren(newChildren);
-            setReconstruct({currScore: 0, total: newChildren});
+            const newChildren = findParentModel(model).children;
+            setNumChildren(newChildren.length);
+            setChildren(newChildren);
+            setReconstruct({currScore: 0, total: newChildren.length});
             reconstrucScore = 0;
         }
         if(model && listShown === true){
@@ -411,13 +417,25 @@ export default function App() {
         }
     }
 
+    const handleDropdownSelection = (index) => {
+        console.log(index);
+        const parent = findParentModel(model);
+        selectedObj(parent.children[index]);
+    }
+
     return (
         <>
             {/* <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} /> */}
             <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} backend={BACKEND} updateLabels={setMatchers} />
             {numChildren != 0 && listShown && <Widget updateList={ () => showList(false) } childCount={numChildren} nextPiece={getNext} finishModelLabels={finishLabelling} />} 
-            {matchers && <LabelMatching nextMatch={getNext} disableKeys={enableDisableKeys} finalScore={score} startMatch={startMatching} />}
-            {!listShown && !matchers && model && <Reconstruction scrambler={scramble} reconScore={reconstruct} model={model} />}
+            {/* {matchers && <LabelMatching nextMatch={getNext} disableKeys={enableDisableKeys} finalScore={score} startMatch={startMatching} />} */}
+            {!listShown && /*!matchers &&*/ model && <Reconstruction scrambler={scramble} reconScore={reconstruct} model={model} />}
+            {children && <SelectionDropdown trigger={<button className="clickable">Choose model part</button>} menu={
+                children.map((child, i) => (
+                    // return <button onClick={handleDropdownSelection(i)}>{i}</button>
+                    React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
+                ))
+            }/>}
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
