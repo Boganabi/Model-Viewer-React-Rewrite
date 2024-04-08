@@ -20,8 +20,6 @@ import SelectionDropdown from './SelectionDropdown.jsx';
 
 /*
 TODO LIST
-index list on the side as a dropdown
-stl support
 */
 
 // end day: 2/22 was last day
@@ -180,6 +178,7 @@ function Scene(props) {
                     const newSelectedObject = parent.children[childIndex]
                     selectedObj(newSelectedObject);
                     setTarget(newSelectedObject);
+                    props.selectedIndex(newSelectedObject);
                 }
                 props.snap();
             }
@@ -195,7 +194,7 @@ function Scene(props) {
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
-            {props.getModel && <primitive {...props} onClick = {(e) => {setTarget(e.object); selectedObj(e.object); e.stopPropagation()} }  object = {props.getModel} />}
+            {props.getModel && <primitive {...props} onClick = {(e) => {setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} }  object = {props.getModel} />}
             {!props.getModel &&  <>
                             <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
                             <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
@@ -259,6 +258,7 @@ export default function App() {
         }
     });
     const [model, setModel] = useState();
+    const [currSelectedNum, setSelectedIndex] = useState(-1);
     const [listShown, setShowList] = useState(false);
     // save data in login form here so its persistent
     const [uploadData, setUploadData] = useState();
@@ -417,10 +417,27 @@ export default function App() {
         }
     }
 
+    function findObjectIndex(obj){
+        // const parent = findParentModel(model);
+        // theres a really weird bug here where model isnt defined when the tab key is used but in every other case it works fine. so this is my goofy workaround
+        for(let i = 0; i < modelRef.children.length; i++){
+            if(modelRef.children[i] === obj){
+                setSelectedIndex(i);
+                break;
+            }
+        }
+    }
+
     const handleDropdownSelection = (index) => {
-        console.log(index);
+        // console.log(index);
         const parent = findParentModel(model);
         selectedObj(parent.children[index]);
+        setTarget(parent.children[index]);
+        setSelectedIndex(index);
+    }
+
+    const handleSubmission = () => {
+        console.log("simulate post message with index " + currSelectedNum);
     }
 
     return (
@@ -436,10 +453,11 @@ export default function App() {
                     React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
                 ))
             }/>}
+            {target && <button className="clickable submit" onClick={handleSubmission}>Submit</button>}
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>
-                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} />
+                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} />
                     {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()}/>}
                     <ambientLight intensity={0.5} />
                     {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
