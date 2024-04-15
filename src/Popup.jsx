@@ -69,7 +69,7 @@ export default function PopupMenu(props){
                         <br />
                         <label className='fileLabel' htmlFor="test">
                             <div className="fileUpload">Click or drop a file here!</div>
-                            <input id="file-upload" type="file" name="file" accept='.glb, .obj' onChange={e => { uploadedFile(e); close() }}/>
+                            <input id="file-upload" type="file" name="file" accept='.glb, .obj, .stl' onChange={e => { uploadedFile(e); close() }}/>
                         </label>
                         <br />
                         <Login callback={ setCreds } creds={creds} backend={props.backend} gotNewModel={e => { uploadedFile(e, true); close() }} updateList={ () => {props.updateList(); close()} } saveUploadData={checkData} savedFormData={props.savedFormData} addLabels={e => { uploadedFile(e); props.updateList(); close() }} labels={props.labels} />

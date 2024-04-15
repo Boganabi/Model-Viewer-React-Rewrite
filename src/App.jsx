@@ -259,6 +259,7 @@ export default function App() {
     });
     const [model, setModel] = useState();
     const [currSelectedNum, setSelectedIndex] = useState(-1);
+    const [nameAttempt, setNameAttempt] = useState("");
     const [listShown, setShowList] = useState(false);
     // save data in login form here so its persistent
     const [uploadData, setUploadData] = useState();
@@ -438,6 +439,7 @@ export default function App() {
 
     const handleSubmission = () => {
         console.log("simulate post message with index " + currSelectedNum);
+        console.log("simulate post message with name attempt: " + nameAttempt);
     }
 
     return (
@@ -453,7 +455,10 @@ export default function App() {
                     React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
                 ))
             }/>}
-            {target && <button className="clickable submit" onClick={handleSubmission}>Submit</button>}
+            {target && <>
+                <button className="clickable submit" onClick={handleSubmission}>Submit</button>
+                <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
+            </>}
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={["#d3d3d3"]} />
                 <Suspense fallback = {<Loader />}>

@@ -308,7 +308,7 @@ input[type="file"]:hover {
   position: absolute;
   display: block;
   z-index: 99;
-  top: 165px;
+  top: 205px;
   left: 14px;
 }
 
@@ -352,4 +352,23 @@ input[type="file"]:hover {
   z-index: 99;
   top: 115px;
   left: 14px;
+}
+
+.nameentry{
+  position:absolute;
+  display: block;
+  z-index: 99;
+  top: 165px;
+  left: 14px;
+
+  height: 30px;
+
+  box-sizing: border-box;
+  border-radius: 5px;
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.1), 0 6px 20px 0 rgba(0,0,0,0.09);
+}
+
+.nameentry:focus {
+  border: 3px solid #555;
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.15), 0 6px 20px 0 rgba(0,0,0,0.11);
 }
