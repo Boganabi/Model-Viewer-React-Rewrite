@@ -397,6 +397,7 @@ export default function App() {
                     reconstructedObjs.add(objRef.uuid);
                     reconstrucScore += 1;
                     setReconstruct({...reconstruct, currScore: reconstrucScore});
+                    console.log("simulate post message with total correct " + reconstrucScore + " and total " + reconstruct.total);
                     // console.log(objRef.uuid);
                     // console.log(reconstrucScore);
                 }
@@ -411,6 +412,7 @@ export default function App() {
                 if(reconstructedObjs.has(objRef.uuid)){
                     reconstructedObjs.delete(objRef.uuid);
                     reconstrucScore -= 1;
+                    console.log("simulate post message with total correct " + reconstrucScore + " and total " + reconstruct.total);
                     // console.log("removed");
                     // console.log(reconstructedObjs);
                 }
