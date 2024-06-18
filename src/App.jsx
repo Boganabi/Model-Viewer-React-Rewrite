@@ -8,7 +8,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
-import { useControls } from 'leva';
+import { Leva, useControls } from 'leva';
+import { useSearchParams } from 'react-router-dom';
 import create from 'zustand';
 import PopupMenu from './Popup.jsx';
 import Widget from './TopLeftWidget.jsx';
@@ -17,6 +18,7 @@ import doKey from './KeyboardFunctions.jsx';
 import LabelMatching from './LabelMatching.jsx';
 import Reconstruction from './Reconstruction.jsx';
 import SelectionDropdown from './SelectionDropdown.jsx';
+import Controls from './Controls.jsx';
 
 /*
 TODO LIST
@@ -60,12 +62,66 @@ function Scene(props) {
     const { scene, camera } = useThree();
     const { gl } = useThree();
 
+    // helper function to fit the model to screen
+    const fitCameraToObject = function(camera, object, offset) { // may need to add controls here as parameter
+        offset = offset || 2.25; // default value if not passed
+
+        object = findParentModel(object);
+
+        const boundingBox = new THREE.Box3();
+
+        // // get bounding box of object
+        boundingBox.setFromObject(object);
+
+        // var centerVec = new THREE.Vector3();
+        // const center = boundingBox.getCenter(centerVec);
+
+        // let measure = new THREE.Vector3();
+        // const size = boundingBox.getSize(measure);
+
+        const {center, size} = getBoundsOfObject(object);
+
+        // temp stuff to draw box
+        // console.log(measure);
+        // console.log(size);
+        // const helper = new THREE.Box3Helper(boundingBox);
+        // scene.add(helper);
+
+        // get the max side of the bounding box (fits to width OR height as needed)
+        const maxDim = Math.max(size.x, size.y, size.z);
+        // console.log(maxDim);
+        // const fov = camera.fov * (Math.PI / 180);
+        // let cameraZ = Math.abs(maxDim / 4 * Math.tan(fov * 2));
+
+        // console.log(cameraZ);
+
+        // cameraZ *= offset; // zoom out a bit
+
+        // console.log(cameraZ);
+
+        // camera.position.z = center.z + cameraZ;
+
+        // const minZ = boundingBox.min.z;
+        // const cameraToFarEdge = (minZ < 0) ? -minZ + cameraZ : cameraZ - minZ;
+
+        // camera.far = cameraToFarEdge * 3;
+        // camera.updateProjectionMatrix();
+
+        // my own solution:
+        camera.position.x = center.x;
+        camera.position.y = center.y;
+        camera.position.z = (offset * (maxDim / 2) / Math.cos(camera.fov / 2)) + center.z;
+
+        camera.lookAt(center);
+    }
+
     if (props.modelURL && props.modelURL !== url) {
         if(props.ext === "glb"){
             const gltf = useLoader(GLTFLoader, props.modelURL);
             // model = gltf.scene;
             props.changeModel(gltf.scene);
             // console.log(model);
+            fitCameraToObject(camera, gltf.scene);
 
             if(props.imgName){
                 // this sucks but i cant think of another way to detect when the model finishes loading, it keeps taking screenshot too early
@@ -154,10 +210,12 @@ function Scene(props) {
             const obj = useLoader(OBJLoader, props.modelURL);
             // model = obj;
             props.changeModel(obj);
+            fitCameraToObject(camera, obj);
         }
         if(props.ext === "stl"){
-            const s = useLoader(STLLoader, props,modelURL);
+            const s = useLoader(STLLoader, props.modelURL);
             props.changeModel(s);
+            fitCameraToObject(camera, s);
         }
         url = props.modelURL;
     }
@@ -184,11 +242,27 @@ function Scene(props) {
             }
         }
 
+        function returnState(){
+            console.log("access the scene variable and post message it back");
+            // if you were calling a function with it, i think it would look something like this:
+            // myFunc(scene)
+        }
+
+        const setScene = (event) => {
+            console.log("scene setting");
+            props.changeModel(event.currentTarget.value);
+        }
+
         document.addEventListener('keydown', handleKeyDown);
+
+        window.addEventListener('getState', returnState);
+        window.addEventListener('setState', setScene);
 
         // cleanup the event listener
         return function cleanup() {
             document.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('getState', returnState);
+            window.removeEventListener('setState', setScene);
         }
     }, []);
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
@@ -234,7 +308,7 @@ function selectedObj(object){
 function findParentModel(child){
     // console.log(child);
     if(child){
-        if (child.children[0] instanceof THREE.Mesh){
+        if (child.children[0] instanceof THREE.Mesh || child.children[0].isObject3D){
             return child
         }
         return findParentModel(child.children[0]);
@@ -244,19 +318,50 @@ function findParentModel(child){
     }
 }
 
+function getBoundsOfObject(object){
+    object = findParentModel(object);
+
+    const boundingBox = new THREE.Box3();
+
+    // get bounding box of object
+    boundingBox.setFromObject(object);
+
+    var centerVec = new THREE.Vector3();
+    const center = boundingBox.getCenter(centerVec);
+
+    let measure = new THREE.Vector3();
+    const size = boundingBox.getSize(measure);
+
+    return {center, size};
+}
+
 export default function App() {
 
-    const BACKEND = "http://localhost:8000/"; // http://139.182.76.138:8000/
+    // const BACKEND = "https://137.184.187.45:80/api/"; // http://139.182.76.138:8000/
+    const BACKEND = "https://devapp02.libretexts.org/api/";
     let count = 0;
 
     const inputAttempt = [];
     const { target, setTarget } = useStore();
-    const { mode } = useControls({ 
+    const [{ mode, showTransformControls, BGColor }, set] = useControls(() => ({ 
         mode: { 
             value: 'translate', 
             options: ['translate', 'rotate'] 
+        },
+        showTransformControls: {
+            value: true,
+        },
+        BGColor: {
+            value: "#d3d3d3",
         }
-    });
+    }));
+
+    // search params
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchModelID, setSearchModelID] = useState();
+    const [searchMode, setSearchMode] = useState();
+    const [searchBGColor, setSearchBGColor] = useState();
+
     const [model, setModel] = useState();
     const [currSelectedNum, setSelectedIndex] = useState(-1);
     const [nameAttempt, setNameAttempt] = useState("");
@@ -274,6 +379,14 @@ export default function App() {
     const [matchers, setMatchers] = useState();
     const [score, setScore] = useState({userScore: -1, totalScore: -1});
     const [reconstruct, setReconstruct] = useState({currScore: 0, total: 0});
+    const [showIcon, setShowIcon] = useState(true);
+    const [canRotate, setCanRotate] = useState(true);
+
+    // to handle via url which types can be shown
+    const [allowJigsaw, setAllowJigsaw] = useState(true);
+    const [allowSelectPiece, setAllowSelectPiece] = useState(true);
+    const [allowTextInput, setAllowTextInput] = useState(true);
+
     const callbackFunction = (childData, isUploaded, preview) => {
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
@@ -307,6 +420,71 @@ export default function App() {
         // console.log(model);
         modelRef = model;
     }, [model, checkedURL]);
+
+    useEffect(() => {
+        // reload the model
+        // make a request to tempdata
+    }, [searchModelID]);
+
+    useEffect(() => {
+        // hide different buttons based on mode
+        // can be: jigsaw, selection, textInput, or none
+        if(searchMode == 'jigsaw'){
+            setAllowJigsaw(true);
+            setAllowSelectPiece(false);
+            setAllowTextInput(false);
+        }
+        else if(searchMode == 'selection'){
+            setAllowJigsaw(false);
+            setAllowSelectPiece(true);
+            setAllowTextInput(false);
+        }
+        else if(searchMode == 'textInput'){
+            setAllowJigsaw(false);
+            setAllowSelectPiece(false);
+            setAllowTextInput(true);
+        }
+        else{
+            setAllowJigsaw(true);
+            setAllowSelectPiece(true);
+            setAllowTextInput(true);
+        }
+    }, [searchMode]);
+
+    useEffect(() => {
+        // change BG color here
+        if(searchBGColor != null){
+            set({ BGColor: searchBGColor })
+        }
+    }, [searchBGColor])
+
+    useEffect(() => {
+        const showHideIcon = (event) => setShowIcon(event.currentTarget.value);
+
+        window.addEventListener("showAdmin", showHideIcon);
+
+        const MID = searchParams.get("modelID"); 
+        const mode = searchParams.get("mode"); // either jigsaw, selection, textInput or none
+        const bgcolor = searchParams.get("BGColor"); // omit the leading #
+
+        searchParams.forEach((param) => {
+            console.log(param);
+        });
+
+        if(MID){
+            setSearchModelID(MID);
+        }
+        if(mode){
+            setSearchMode(mode);
+        }
+        if(bgcolor != null){
+            setSearchBGColor("#" + bgcolor);
+        }
+
+        return () => {
+            window.removeEventListener("showAdmin", showHideIcon);
+        }
+    }, []);
 
     function startMatching() {
         if(matchers && model){
@@ -364,16 +542,26 @@ export default function App() {
     function scramble(){
         // console.log("boop");
         // setReconstruct({...reconstruct, currScore: 1});
-        const min = -3;
-        const max = 3;
+        const {size, center} = getBoundsOfObject(model);
+        const min = {
+            x: size.x * -1, 
+            y: size.y * -1, 
+            z: size.z * -1
+        }; // i do this because min = -size results in NaN
+        const max = size;
+        // console.log(min);
+        // console.log(max);
         const parent = findParentModel(model);
         parent.children.forEach((part) => {
-            const randX = min + (Math.random() * (max - min));
-            const randY = min + (Math.random() * (max - min));
-            const randZ = min + (Math.random() * (max - min));
+            const randX = min.x + (Math.random() * (max.x - min.x));
+            const randY = min.y + (Math.random() * (max.y - min.y));
+            const randZ = min.z + (Math.random() * (max.z - min.z));
             part.translateX(randX);
             part.translateY(randY);
             part.translateZ(randZ);
+            // console.log(randX);
+            // console.log(randY);
+            // console.log(randZ);
         })
     }
 
@@ -447,32 +635,35 @@ export default function App() {
     return (
         <>
             {/* <PopupMenu callback={callbackFunction} setter={setIsOpen} flag={popupIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} /> */}
-            <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} backend={BACKEND} updateLabels={setMatchers} />
-            {numChildren != 0 && listShown && <Widget updateList={ () => showList(false) } childCount={numChildren} nextPiece={getNext} finishModelLabels={finishLabelling} />} 
+            {showIcon && <PopupMenu callback={callbackFunction} setter={setIsOpen} updateList={ () => showList(true) } saveData={checkUploadData} savedFormData={uploadData} labels={labels} getOpen={popupIsOpen} backend={BACKEND} updateLabels={setMatchers} />}
+            {numChildren != 0 && listShown && allowTextInput && <Widget updateList={ () => showList(false) } childCount={numChildren} nextPiece={getNext} finishModelLabels={finishLabelling} />} 
             {/* {matchers && <LabelMatching nextMatch={getNext} disableKeys={enableDisableKeys} finalScore={score} startMatch={startMatching} />} */}
-            {!listShown && /*!matchers &&*/ model && <Reconstruction scrambler={scramble} reconScore={reconstruct} model={model} />}
-            {children && <SelectionDropdown trigger={<button className="clickable">Choose model part</button>} menu={
+            {!listShown && /*!matchers &&*/ model && allowJigsaw && <Reconstruction scrambler={scramble} reconScore={reconstruct} model={model} />}
+            {children && allowSelectPiece && <SelectionDropdown trigger={<button className="clickable">Choose model part</button>} menu={
                 children.map((child, i) => (
                     // return <button onClick={handleDropdownSelection(i)}>{i}</button>
                     React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
                 ))
             }/>}
+            <Leva hidden={!model} />
             {target && <>
                 <button className="clickable submit" onClick={handleSubmission}>Submit</button>
                 <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
             </>}
+            <Controls />
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
-                <color attach="background" args={["#d3d3d3"]} />
+                <color attach="background" args={[BGColor]} />
                 <Suspense fallback = {<Loader />}>
                     <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} />
-                    {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()}/>}
+                    {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false) }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
                     <ambientLight intensity={0.5} />
                     {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
                     <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={2} castShadow />
                     <pointLight position = {[-10, -10, -10]} intensity={1} />
-                    <OrbitControls enablePan={false} mouseButtons={{
+                    <OrbitControls enableRotate={canRotate} mouseButtons={{
                         MIDDLE: THREE.MOUSE.ZOOM,
-                        RIGHT: THREE.MOUSE.ROTATE,
+                        LEFT: THREE.MOUSE.ROTATE,
+                        RIGHT: THREE.MOUSE.PAN,
                     }}
                     />
                     <mesh position={[0,0,0]} scale={0.05} >

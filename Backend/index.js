@@ -30,8 +30,10 @@ const modelUpload = multer({ dest: './../public/models/'});
 //     next();
 // });
 
+// origin: ['http://139.182.76.138', 'http://139.182.112.89', 'http://137.184.187.45', 'http://127.0.0.1:3000'],
+
 let corsOptions = {
-    origin: ['http://139.182.76.138', 'http://139.182.112.89', 'http://127.0.0.1:3000'],
+    origin: ['https://devapp02.libretexts.org', 'https://137.184.187.45:80', 'http://127.0.0.1:3000'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
 }
 
@@ -59,7 +61,7 @@ pool.connect((err, client, release) => {
     })
 })
 
-app.get('/testdata', (req, res, next) => {
+app.get('/api/testdata', (req, res, next) => {
     const id = req.query["id"];
     console.log("TEST DATA :");
     pool.query('SELECT filecall, labels FROM test WHERE id=' + id)
@@ -69,15 +71,18 @@ app.get('/testdata', (req, res, next) => {
         })
 })
 
-app.get('/getall', (req, res, next) => {
+app.get('/api/getall', (req, res, next) => {
     pool.query('SELECT filename, preview, id, classtype FROM test ORDER BY id')
         .then(data => {
             res.send(data);
         })
+        .catch(e => {
+            console.log(e);
+        })
 })
 
 // handle database insert
-app.post('/testdata', (req, res, next) => {
+app.post('/api/testdata', (req, res, next) => {
     const name = req.query["filename"];
     const preview = req.query['image'];
     const classname = req.query['classtype'];
@@ -91,7 +96,7 @@ app.post('/testdata', (req, res, next) => {
 })
 
 // handles file uploads with multer
-app.post('/upload', upload.single('image'), (req, res, next) => {
+app.post('/api/upload', upload.single('image'), (req, res, next) => {
     console.log("in image upload");
     const imageName = req.file;
     const originalName = req.body.filename;
@@ -104,7 +109,7 @@ app.post('/upload', upload.single('image'), (req, res, next) => {
 })
 
 // handle new model
-app.post('/uploadmodel', modelUpload.single('model'), (req, res, next) => {
+app.post('/api/uploadmodel', modelUpload.single('model'), (req, res, next) => {
     console.log("in model upload");
     console.log(req.file);
     console.log(req.file.path);

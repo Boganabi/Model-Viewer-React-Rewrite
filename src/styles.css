@@ -248,6 +248,10 @@ input[type="file"]:hover {
     /* I need the !important here because there is no other way to override the leva class since my css file is loaded first */
     width: 70vw !important;
   }
+
+  .ControlDisplay{
+    width: 75px;
+  }
 }
 
 #cards {
@@ -310,6 +314,34 @@ input[type="file"]:hover {
   z-index: 99;
   top: 205px;
   left: 14px;
+}
+
+.controls {
+  position: absolute;
+  display: block;
+  z-index: 99;
+  top: 12px;
+  left: 70px;
+}
+
+.divControls{
+  overflow: scroll;
+  margin: 0 auto;
+  width: 650px;
+}
+
+.ControlDisplay{
+  margin-left: 20%;
+  float: left;  
+}
+
+.ControlKeys{
+  margin-left: 50%;
+}
+
+.keysPadding{
+  margin-top: 16px;
+  margin-bottom: 16px;
 }
 
 .menu{
