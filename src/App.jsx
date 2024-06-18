@@ -338,7 +338,8 @@ function getBoundsOfObject(object){
 export default function App() {
 
     // const BACKEND = "https://137.184.187.45:80/api/"; // http://139.182.76.138:8000/
-    const BACKEND = "https://devapp02.libretexts.org/api/";
+    // const BACKEND = "https://devapp02.libretexts.org/api/";
+    const BACKEND = "http://127.0.0.1:8000/api/";
     let count = 0;
 
     const inputAttempt = [];
@@ -423,7 +424,31 @@ export default function App() {
 
     useEffect(() => {
         // reload the model
-        // make a request to tempdata
+        if(searchModelID){
+            // make a request to tempdata
+            axios({
+                method: 'get',
+                url: BACKEND + 'testdata',
+                params: {
+                    id: searchModelID
+                }
+            })
+            .then(function (response) {
+                // handle success
+                const newURL = "/" + response.data[0].filecall;
+
+                // props.matchers(response.data[0].labels)
+
+                callbackFunction(newURL);
+            })
+            .catch(function (error) {
+                // handle error
+                console.log("There was an error from Axios: \n" + error);
+            })
+            .then(function () {
+                // always executed
+            })
+        }
     }, [searchModelID]);
 
     useEffect(() => {
@@ -467,9 +492,9 @@ export default function App() {
         const mode = searchParams.get("mode"); // either jigsaw, selection, textInput or none
         const bgcolor = searchParams.get("BGColor"); // omit the leading #
 
-        searchParams.forEach((param) => {
-            console.log(param);
-        });
+        // searchParams.forEach((param) => {
+        //     console.log(param);
+        // });
 
         if(MID){
             setSearchModelID(MID);
