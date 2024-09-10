@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import axios from 'axios';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useCursor, Icosahedron } from '@react-three/drei';
+import { Select } from '@react-three/postprocessing';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
@@ -19,6 +20,7 @@ import LabelMatching from './LabelMatching.jsx';
 import Reconstruction from './Reconstruction.jsx';
 import SelectionDropdown from './SelectionDropdown.jsx';
 import Controls from './Controls.jsx';
+import Effects from './PostEffects.jsx';
 
 /*
 TODO LIST
@@ -338,8 +340,8 @@ function getBoundsOfObject(object){
 export default function App() {
 
     // const BACKEND = "https://137.184.187.45:80/api/"; // http://139.182.76.138:8000/
-    // const BACKEND = "https://devapp02.libretexts.org/api/";
-    const BACKEND = "http://127.0.0.1:8000/api/";
+    const BACKEND = "https://devapp02.libretexts.org/api/";
+    // const BACKEND = "http://127.0.0.1:8000/api/";
     let count = 0;
 
     const inputAttempt = [];
@@ -481,7 +483,7 @@ export default function App() {
         if(searchBGColor != null){
             set({ BGColor: searchBGColor })
         }
-    }, [searchBGColor])
+    }, [searchBGColor]);
 
     useEffect(() => {
         const showHideIcon = (event) => setShowIcon(event.currentTarget.value);
@@ -679,12 +681,17 @@ export default function App() {
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
                 <color attach="background" args={[BGColor]} />
                 <Suspense fallback = {<Loader />}>
-                    <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} />
+                    {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
+                    {/* {!TransformControls.visible &&  */}
+                    <Select enabled for="SSR">
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} />
+                        <Effects enabled={!showTransformControls} />
+                    </Select>
                     {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false) }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
-                    <ambientLight intensity={0.5} />
+                    <ambientLight intensity={2.5} />
                     {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
-                    <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={2} castShadow />
-                    <pointLight position = {[-10, -10, -10]} intensity={1} />
+                    <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={4} castShadow decay={0} />
+                    <pointLight position = {[-10, -10, -10]} intensity={2} decay={0} />
                     <OrbitControls enableRotate={canRotate} mouseButtons={{
                         MIDDLE: THREE.MOUSE.ZOOM,
                         LEFT: THREE.MOUSE.ROTATE,
