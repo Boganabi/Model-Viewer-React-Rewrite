@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { ToneMapping, EffectComposer, SSR, Bloom, LUT } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { useControls } from 'leva';
+import { Environment } from '@react-three/drei';
 // import { LUTCubeLoader } from 'postprocessing'
 
 export default function Effects(props) {
@@ -40,15 +41,16 @@ export default function Effects(props) {
   // })
 
   return (
-    props.enabled && (
-      <EffectComposer disableNormalPass smaa={false}>
-        { /* this gives the original color back, since the EffectComposer disables normal tonemapping */ }
-        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-        <SSR />
-        {/* <Bloom luminanceThreshold={0.5} mipmapBlur luminanceSmoothing={0} intensity={1.5} /> */}
-        {/* <LUT lut={texture} /> */}
-      </EffectComposer>
-    )
+     props.enabled && (
+       <EffectComposer disableNormalPass smaa={false}>
+         { /* this gives the original color back, since the EffectComposer disables normal tonemapping */ }
+         {/* <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+         <SSR /> */}
+         {/* <Bloom luminanceThreshold={0.5} mipmapBlur luminanceSmoothing={0} intensity={1.5} /> */}
+         {/* <LUT lut={texture} /> */}
+         <Environment background files="brown_photostudio_02_4k.hdr" />
+       </EffectComposer>
+     )
   )
 }
 

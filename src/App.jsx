@@ -2,7 +2,7 @@ import React, { Suspense, useEffect, useState, } from 'react';
 import * as THREE from 'three';
 // import axios from 'redaxios';
 import axios from 'axios';
-import { Canvas, useLoader, useThree } from '@react-three/fiber';
+import { Canvas, useLoader, useThree, addEffect } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useCursor, Icosahedron } from '@react-three/drei';
 import { Select } from '@react-three/postprocessing';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -63,6 +63,12 @@ function Scene(props) {
 
     const { scene, camera } = useThree();
     const { gl } = useThree();
+
+    //workaround for weird ghosting bug from postprocessing
+    addEffect(() => {
+        gl.setRenderTarget(null);
+        gl.clear()
+    });
 
     // helper function to fit the model to screen
     const fitCameraToObject = function(camera, object, offset) { // may need to add controls here as parameter
@@ -346,12 +352,15 @@ export default function App() {
 
     const inputAttempt = [];
     const { target, setTarget } = useStore();
-    const [{ mode, showTransformControls, BGColor }, set] = useControls(() => ({ 
+    const [{ mode, showTransformControls, enableHDRI, BGColor }, set] = useControls(() => ({ 
         mode: { 
             value: 'translate', 
             options: ['translate', 'rotate'] 
         },
         showTransformControls: {
+            value: false,
+        },
+        enableHDRI: {
             value: true,
         },
         BGColor: {
@@ -685,13 +694,15 @@ export default function App() {
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
                         <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} />
-                        <Effects enabled={!showTransformControls} />
+                        <Effects enabled={enableHDRI} />
                     </Select>
                     {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false) }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
-                    <ambientLight intensity={2.5} />
-                    {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
-                    <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={4} castShadow decay={0} />
-                    <pointLight position = {[-10, -10, -10]} intensity={2} decay={0} />
+                    {!enableHDRI && <>
+                        <ambientLight intensity={2.5} />
+                        {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
+                        <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={4} castShadow decay={0} />
+                        <pointLight position = {[-10, -10, -10]} intensity={2} decay={0} />
+                    </>}
                     <OrbitControls enableRotate={canRotate} mouseButtons={{
                         MIDDLE: THREE.MOUSE.ZOOM,
                         LEFT: THREE.MOUSE.ROTATE,
