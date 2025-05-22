@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Popup from 'reactjs-popup';
 
 export default function(props) {
 
+    const [modalOpen, setOpen] = useState(false);
+
     return (
         <>
-            <Popup modal style={{overflow: 'scroll'}} className='popupContent' trigger={<button className='clickable controls' >Show Controls</button>}>
+            <Popup modal style={{overflow: 'scroll'}} className='popupContent' trigger={<button className='clickable controls' >Show Controls</button>} onOpen={() => { setOpen(true) }} onClose={() => { setOpen(false) }} open={modalOpen}>
+                <button className='close' onClick={ () => setOpen(false) }>&times;</button>
                 <div className='centeredBoi'>
                     <h2>Controls</h2>
                     <div className='ControlDisplay'>

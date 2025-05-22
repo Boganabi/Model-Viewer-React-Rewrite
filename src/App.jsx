@@ -346,7 +346,7 @@ function getBoundsOfObject(object){
 export default function App() {
 
     // const BACKEND = "https://137.184.187.45:80/api/"; // http://139.182.76.138:8000/
-    const BACKEND = "https://devapp02.libretexts.org/api/";
+    const BACKEND = "https://devapp02.libretexts.org/api/"; // MODIFY THIS ONCE URL FOR 3D MODEL AVAILABLE
     // const BACKEND = "http://127.0.0.1:8000/api/";
     let count = 0;
 
@@ -391,7 +391,7 @@ export default function App() {
     const [matchers, setMatchers] = useState();
     const [score, setScore] = useState({userScore: -1, totalScore: -1});
     const [reconstruct, setReconstruct] = useState({currScore: 0, total: 0});
-    const [showIcon, setShowIcon] = useState(true);
+    const [showIcon, setShowIcon] = useState(false);
     const [canRotate, setCanRotate] = useState(true);
 
     // to handle via url which types can be shown
@@ -439,7 +439,7 @@ export default function App() {
             // make a request to tempdata
             axios({
                 method: 'get',
-                url: BACKEND + 'testdata',
+                url: BACKEND + 'testdata', // MODIFY THIS ONCE URL FOR 3D MODEL AVAILABLE
                 params: {
                     id: searchModelID
                 }

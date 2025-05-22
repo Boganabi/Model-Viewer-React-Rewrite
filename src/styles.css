@@ -321,7 +321,7 @@ input[type="file"]:hover {
   display: block;
   z-index: 99;
   top: 12px;
-  left: 70px;
+  left: 10px;
 }
 
 .divControls{
