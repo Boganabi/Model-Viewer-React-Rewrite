@@ -436,13 +436,24 @@ export default function App() {
     useEffect(() => {
         // reload the model
         if(searchModelID){
+            // check if passed URL contains direct=true
+            let modelQuery = searchModelID;
+            if(!modelQuery.includes("direct=true")){
+                if(!modelQuery.includes("?")){
+                    modelQuery += "?";
+                }
+                else{
+                    modelQuery += "&";
+                }
+                modelQuery += "direct=true";
+            }
             // make a request to tempdata
             axios({
                 method: 'get',
-                url: BACKEND + 'testdata', // MODIFY THIS ONCE URL FOR 3D MODEL AVAILABLE
-                params: {
-                    id: searchModelID
-                }
+                url: modelQuery,
+                // params: {
+                //     id: searchModelID
+                // }
             })
             .then(function (response) {
                 // handle success
