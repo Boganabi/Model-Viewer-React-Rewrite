@@ -447,29 +447,32 @@ export default function App() {
                 }
                 modelQuery += "direct=true";
             }
+            // since GLTF loader just needs a URL, i think this should work
+            callbackFunction(modelQuery);
             // make a request to tempdata
-            axios({
-                method: 'get',
-                url: modelQuery,
-                // params: {
-                //     id: searchModelID
-                // }
-            })
-            .then(function (response) {
-                // handle success
-                const newURL = "/" + response.data[0].filecall;
+            // axios({
+            //     method: 'get',
+            //     url: modelQuery,
+            //     // params: {
+            //     //     id: searchModelID
+            //     // }
+            // })
+            // .then(function (response) {
+            //     // handle success
+            //     // const newURL = "/" + response.data[0].filecall;
 
-                // props.matchers(response.data[0].labels)
+            //     // props.matchers(response.data[0].labels)
+            //     console.log(response);
 
-                callbackFunction(newURL);
-            })
-            .catch(function (error) {
-                // handle error
-                console.log("There was an error from Axios: \n" + error);
-            })
-            .then(function () {
-                // always executed
-            })
+            //     callbackFunction(response.data);
+            // })
+            // .catch(function (error) {
+            //     // handle error
+            //     console.log("There was an error from Axios: \n" + error);
+            // })
+            // .then(function () {
+            //     // always executed
+            // })
         }
     }, [searchModelID]);
 
