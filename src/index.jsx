@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import '@iframe-resizer/child'
 import './styles.css';
 import App from './App.jsx';
 import { BrowserRouter } from 'react-router-dom';

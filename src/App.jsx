@@ -123,12 +123,24 @@ function Scene(props) {
         camera.lookAt(center);
     }
 
+    // makes off centered models centered in 3D space
+    const centerModel = function(model){
+        model = findParentModel(model);
+        const {center, size} = getBoundsOfObject(model);
+
+        // offset model by center of bounding box
+        model.position.x -= center.x
+        model.position.y -= center.y
+        model.position.z -= center.z
+    }
+
     if (props.modelURL && props.modelURL !== url) {
         if(props.ext === "glb"){
             const gltf = useLoader(GLTFLoader, props.modelURL);
             // model = gltf.scene;
             props.changeModel(gltf.scene);
             // console.log(model);
+            centerModel(gltf.scene);
             fitCameraToObject(camera, gltf.scene);
 
             if(props.imgName){
@@ -218,11 +230,13 @@ function Scene(props) {
             const obj = useLoader(OBJLoader, props.modelURL);
             // model = obj;
             props.changeModel(obj);
+            centerModel(obj);
             fitCameraToObject(camera, obj);
         }
         if(props.ext === "stl"){
             const s = useLoader(STLLoader, props.modelURL);
             props.changeModel(s);
+            centerModel(s);
             fitCameraToObject(camera, s);
         }
         url = props.modelURL;
@@ -363,18 +377,20 @@ export default function App() {
         enableHDRI: {
             value: true,
         },
-        BGColor: {
-            value: "#d3d3d3",
-        }
+        // BGColor: {
+        //     value: "#d3d3d3",
+        // }
     }));
 
     // search params
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchModelID, setSearchModelID] = useState();
     const [searchMode, setSearchMode] = useState();
-    const [searchBGColor, setSearchBGColor] = useState();
+    const [searchBGColor, setSearchBGColor] = useState("#d3d3d3");
+    const [searchPiece, setSearchPiece] = useState();
 
     const [model, setModel] = useState();
+    const [backgroundurl, setbackgroundurl] = useState();
     const [currSelectedNum, setSelectedIndex] = useState(-1);
     const [nameAttempt, setNameAttempt] = useState("");
     const [listShown, setShowList] = useState(false);
@@ -395,9 +411,9 @@ export default function App() {
     const [canRotate, setCanRotate] = useState(true);
 
     // to handle via url which types can be shown
-    const [allowJigsaw, setAllowJigsaw] = useState(true);
-    const [allowSelectPiece, setAllowSelectPiece] = useState(true);
-    const [allowTextInput, setAllowTextInput] = useState(true);
+    const [allowJigsaw, setAllowJigsaw] = useState(false);
+    const [allowSelectPiece, setAllowSelectPiece] = useState(false);
+    const [allowTextInput, setAllowTextInput] = useState(false);
 
     const callbackFunction = (childData, isUploaded, preview) => {
         if(isUploaded){
@@ -431,6 +447,11 @@ export default function App() {
         }
         // console.log(model);
         modelRef = model;
+
+        // check to make sure that if a selected piece was passed to select it, just in case it was not selected before
+        if(searchPiece){
+            selectPiece(searchPiece);
+        }
     }, [model, checkedURL]);
 
     useEffect(() => {
@@ -495,18 +516,27 @@ export default function App() {
             setAllowTextInput(true);
         }
         else{
-            setAllowJigsaw(true);
-            setAllowSelectPiece(true);
-            setAllowTextInput(true);
+            setAllowJigsaw(false);
+            setAllowSelectPiece(false);
+            setAllowTextInput(false);
         }
     }, [searchMode]);
 
     useEffect(() => {
-        // change BG color here
-        if(searchBGColor != null){
-            set({ BGColor: searchBGColor })
+        if(model){
+            selectPiece(searchPiece);
         }
-    }, [searchBGColor]);
+        else{
+            console.log("no model available to select piece");
+        }
+    }, [searchPiece]);
+
+    // useEffect(() => {
+    //     // change BG color here
+    //     if(searchBGColor != null){
+    //         set({ BGColor: searchBGColor })
+    //     }
+    // }, [searchBGColor]);
 
     useEffect(() => {
         const showHideIcon = (event) => setShowIcon(event.currentTarget.value);
@@ -516,6 +546,8 @@ export default function App() {
         const MID = searchParams.get("modelID"); 
         const mode = searchParams.get("mode"); // either jigsaw, selection, textInput or none
         const bgcolor = searchParams.get("BGColor"); // omit the leading #
+        const bgimg = searchParams.get("BGImage");
+        const selectedpiece = searchParams.get("piece");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -530,11 +562,35 @@ export default function App() {
         if(bgcolor != null){
             setSearchBGColor("#" + bgcolor);
         }
+        if(bgimg){
+            setbackgroundurl(bgimg);
+        }
+        if(selectedpiece){
+            setSearchPiece(selectedpiece);
+        }
 
         return () => {
             window.removeEventListener("showAdmin", showHideIcon);
         }
     }, []);
+
+    // function to handle everything about selecting a piece
+    function selectPiece(index){
+        if(model){
+            const objToSelect = model.children[index];
+            setSelectedIndex(searchPiece);
+            if(objToSelect){
+                setTarget(objToSelect);
+                selectedObj(objToSelect);
+            }
+            else{
+                console.log("index too large: " + index + " of maximum " + model.children.length);
+            }
+        }
+        else{
+            console.log("no model available");
+        }
+    }
 
     function startMatching() {
         if(matchers && model){
@@ -696,22 +752,23 @@ export default function App() {
                 ))
             }/>}
             <Leva hidden={!model} />
-            {target && <>
+            {target && allowTextInput && <>
                 <button className="clickable submit" onClick={handleSubmission}>Submit</button>
                 <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
             </>}
             <Controls />
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
-                <color attach="background" args={[BGColor]} />
+                {/* <color attach="background" args={[BGColor]} /> */}
+                <color attach="background" args={[searchBGColor]} />
                 <Suspense fallback = {<Loader />}>
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
                         <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} />
-                        <Effects enabled={enableHDRI} />
+                        <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false) }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
-                    {!enableHDRI && <>
+                    {!backgroundurl && <>
                         <ambientLight intensity={2.5} />
                         {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
                         <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={4} castShadow decay={0} />

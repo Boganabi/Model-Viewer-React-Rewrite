@@ -41,14 +41,14 @@ export default function Effects(props) {
   // })
 
   return (
-     props.enabled && (
+     props.enabled && props.location && (
        <EffectComposer disableNormalPass smaa={false}>
          { /* this gives the original color back, since the EffectComposer disables normal tonemapping */ }
          {/* <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
          <SSR /> */}
          {/* <Bloom luminanceThreshold={0.5} mipmapBlur luminanceSmoothing={0} intensity={1.5} /> */}
          {/* <LUT lut={texture} /> */}
-         <Environment background files="brown_photostudio_02_4k.hdr" />
+         <Environment background files={props.location} />
        </EffectComposer>
      )
   )
