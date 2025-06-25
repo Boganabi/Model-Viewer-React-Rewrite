@@ -24,16 +24,16 @@ import Effects from './PostEffects.jsx';
 
 /*
 TODO LIST
+- figure out a way to shrink/hide the modal
+- look into moving pieces directly with the mouse
 */
-
-// end day: 2/22 was last day
 
 const useStore = create((set) => ({ target: null, setTarget: (target) => set({ target }) }));
 
 const exporter = new GLTFExporter();
 
 var tempHex;
-var lastSelected;
+var lastSelected = [];
 var url = "";
 
 var objRef;
@@ -135,13 +135,14 @@ function Scene(props) {
     }
 
     if (props.modelURL && props.modelURL !== url) {
+        var newModel;
         if(props.ext === "glb"){
             const gltf = useLoader(GLTFLoader, props.modelURL);
-            // model = gltf.scene;
-            props.changeModel(gltf.scene);
-            // console.log(model);
-            centerModel(gltf.scene);
-            fitCameraToObject(camera, gltf.scene);
+            newModel = gltf.scene;
+            // props.changeModel(gltf.scene);
+            // // console.log(model);
+            // centerModel(gltf.scene);
+            // fitCameraToObject(camera, gltf.scene);
 
             if(props.imgName){
                 // this sucks but i cant think of another way to detect when the model finishes loading, it keeps taking screenshot too early
@@ -228,19 +229,40 @@ function Scene(props) {
         }
         if(props.ext === "obj"){
             const obj = useLoader(OBJLoader, props.modelURL);
-            // model = obj;
-            props.changeModel(obj);
-            centerModel(obj);
-            fitCameraToObject(camera, obj);
+            newModel = obj;
+            // props.changeModel(obj);
+            // centerModel(obj);
+            // fitCameraToObject(camera, obj);
         }
         if(props.ext === "stl"){
             const s = useLoader(STLLoader, props.modelURL);
-            props.changeModel(s);
-            centerModel(s);
-            fitCameraToObject(camera, s);
+            newModel = s;
+            // props.changeModel(s);
+            // centerModel(s);
+            // fitCameraToObject(camera, s);
+        }
+
+        if(newModel){
+            props.changeModel(newModel);
+            if(props.modelOffset){
+                newModel.position.x += props.modelOffset.x;
+                newModel.position.y += props.modelOffset.y;
+                newModel.position.z += props.modelOffset.z;
+            }
+            else{
+                centerModel(newModel);
+            }
+            fitCameraToObject(camera, newModel, props.camOffset);
         }
         url = props.modelURL;
     }
+
+    // spin animation
+    // useFrame(({clock}) => {
+    //     if(props.getModel && canSpin){
+    //         props.getModel.rotation.y = clock.elapsedTime;
+    //     }
+    // });
 
     // handle a keypress here
     useEffect(() => {
@@ -290,7 +312,7 @@ function Scene(props) {
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
-            {props.getModel && <primitive {...props} onClick = {(e) => {setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} }  object = {props.getModel} />}
+            {props.getModel && <primitive {...props} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} }  object = {props.getModel} />}
             {!props.getModel &&  <>
                             <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
                             <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
@@ -299,10 +321,13 @@ function Scene(props) {
     );
 }
 
-function selectedObj(object){
+function selectedObj(object, deselect = true){
     
-    if(!lastSelected){
-        lastSelected = object;
+    // if(!lastSelected){
+    //     lastSelected = object;
+    // }
+    if(lastSelected.length === 0){
+        lastSelected.push(object);
     }
 
     objRef = object;
@@ -310,7 +335,11 @@ function selectedObj(object){
     if(object){
 
         tempHex = object.material.emissive.getHex();
-        lastSelected.material.emissive.setHex(tempHex);
+        if(deselect){
+            for(let i = 0; i < lastSelected.length; i++){
+                lastSelected[i].material.emissive.setHex(tempHex);
+            }
+        }
 
         const m = object.material.clone();
         m.emissive.setHex(0xff0000);
@@ -319,11 +348,16 @@ function selectedObj(object){
     }
     else{
         if(lastSelected){
-           lastSelected.material.emissive.setHex(tempHex); 
+            if(deselect){
+                for(let i = 0; i < lastSelected.length; i++){
+                    lastSelected[i].material.emissive.setHex(tempHex);
+                }
+            }
         }
     }
     
-    lastSelected = object;
+    //lastSelected = object;
+    lastSelected.push(object);
 }
 
 // helper function to get the parts of the model
@@ -388,6 +422,8 @@ export default function App() {
     const [searchMode, setSearchMode] = useState();
     const [searchBGColor, setSearchBGColor] = useState("#d3d3d3");
     const [searchPiece, setSearchPiece] = useState();
+    const [searchModelOffset, setModelOffset] = useState();
+    const [searchCameraOffset, setCameraOffset] = useState(2.25);
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
@@ -409,6 +445,7 @@ export default function App() {
     const [reconstruct, setReconstruct] = useState({currScore: 0, total: 0});
     const [showIcon, setShowIcon] = useState(false);
     const [canRotate, setCanRotate] = useState(true);
+    const [autoRot, setAutoRot] = useState(true);
 
     // to handle via url which types can be shown
     const [allowJigsaw, setAllowJigsaw] = useState(false);
@@ -450,9 +487,27 @@ export default function App() {
 
         // check to make sure that if a selected piece was passed to select it, just in case it was not selected before
         if(searchPiece){
-            selectPiece(searchPiece);
+            // selectPiece(searchPiece);
+            console.log(searchPiece);
+            if(searchPiece.length == 1){
+                selectPiece(searchPiece[0]);
+            }
+            else{
+                for(let i = 0; i < searchPiece.length; i++){
+                    selectPiece(searchPiece[i], false);
+                }
+            }
         }
     }, [model, checkedURL]);
+
+    useEffect(() => {
+        if(target){
+            setAutoRot(false);
+        }
+        else{
+            setAutoRot(true);
+        }
+    }, [target]);
 
     useEffect(() => {
         // reload the model
@@ -524,10 +579,20 @@ export default function App() {
 
     useEffect(() => {
         if(model){
-            selectPiece(searchPiece);
+            console.log(searchPiece);
+            if(searchPiece.length == 1){
+                selectPiece(searchPiece[0]);
+            }
+            else{
+                for(let i = 0; i < searchPiece.length; i++){
+                    selectPiece(searchPiece[i], false);
+                }
+            }
         }
         else{
-            console.log("no model available to select piece");
+            if(searchPiece){
+                console.log("no model available to select piece");
+            }
         }
     }, [searchPiece]);
 
@@ -548,6 +613,8 @@ export default function App() {
         const bgcolor = searchParams.get("BGColor"); // omit the leading #
         const bgimg = searchParams.get("BGImage");
         const selectedpiece = searchParams.get("piece");
+        const modelOffset = searchParams.get("modelOffset");
+        const camOffset = searchParams.get("cameraOffset");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -566,7 +633,34 @@ export default function App() {
             setbackgroundurl(bgimg);
         }
         if(selectedpiece){
-            setSearchPiece(selectedpiece);
+            const pieces = selectedpiece.split(",");
+            var piecesToSelect = [];
+            for(let i = 0; i < pieces.length; i++){
+                // check p is number then add to array
+                let q = Number(pieces[i]);
+                if(!isNaN(q)){
+                    piecesToSelect.push(q);
+                }
+            }
+            console.log(piecesToSelect);
+            setSearchPiece(piecesToSelect);
+        }
+        if(modelOffset){
+            const dims = modelOffset.split(",");
+            if(dims.length <= 2){
+                console.log("not enough dimensions given to form offset!");
+            }
+            else{
+                var offset = {
+                    x: dims[0],
+                    y: dims[1],
+                    z: dims[2]
+                };
+                setModelOffset(offset);
+            }
+        }
+        if(camOffset){
+            setCameraOffset(camOffset);
         }
 
         return () => {
@@ -575,20 +669,17 @@ export default function App() {
     }, []);
 
     // function to handle everything about selecting a piece
-    function selectPiece(index){
+    function selectPiece(index, deselect = true){
         if(model){
             const objToSelect = model.children[index];
-            setSelectedIndex(searchPiece);
+            setSelectedIndex(index); // when selecting multiple, last index is the one that will be used for tabbing
             if(objToSelect){
                 setTarget(objToSelect);
-                selectedObj(objToSelect);
+                selectedObj(objToSelect, deselect);
             }
             else{
                 console.log("index too large: " + index + " of maximum " + model.children.length);
             }
-        }
-        else{
-            console.log("no model available");
         }
     }
 
@@ -751,30 +842,30 @@ export default function App() {
                     React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
                 ))
             }/>}
-            <Leva hidden={!model} />
+            <Leva hidden={!model || model.children.length === 1} />
             {target && allowTextInput && <>
                 <button className="clickable submit" onClick={handleSubmission}>Submit</button>
                 <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
             </>}
             <Controls />
-            <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null) }}>
+            <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null); }}>
                 {/* <color attach="background" args={[BGColor]} /> */}
                 <color attach="background" args={[searchBGColor]} />
                 <Suspense fallback = {<Loader />}>
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
-                    {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false) }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
+                    {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
                     {!backgroundurl && <>
                         <ambientLight intensity={2.5} />
                         {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
                         <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={4} castShadow decay={0} />
                         <pointLight position = {[-10, -10, -10]} intensity={2} decay={0} />
                     </>}
-                    <OrbitControls enableRotate={canRotate} mouseButtons={{
+                    <OrbitControls autoRotate={autoRot} enableRotate={canRotate} mouseButtons={{
                         MIDDLE: THREE.MOUSE.ZOOM,
                         LEFT: THREE.MOUSE.ROTATE,
                         RIGHT: THREE.MOUSE.PAN,
