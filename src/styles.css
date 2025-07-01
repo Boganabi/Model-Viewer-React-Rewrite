@@ -404,3 +404,21 @@ input[type="file"]:hover {
   border: 3px solid #555;
   box-shadow: 0 8px 16px 0 rgba(0,0,0,0.15), 0 6px 20px 0 rgba(0,0,0,0.11);
 }
+
+.leva-c-kWgxhW-bCBHqk-fill-false {
+  /* I need the !important here because there is no other way to override the leva class since my css file is loaded first */
+  width: 200px !important;
+} 
+
+.leva-c-iSkYoW{
+  min-width: 50px;
+}
+
+.leva-c-dkRbIj{
+  width: 100px;
+}
+
+.leva-c-grzFYX{
+  width: 160px; 
+  overflow: hidden;
+}

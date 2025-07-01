@@ -24,7 +24,6 @@ import Effects from './PostEffects.jsx';
 
 /*
 TODO LIST
-- figure out a way to shrink/hide the modal
 - look into moving pieces directly with the mouse
 */
 
@@ -321,7 +320,7 @@ function Scene(props) {
     );
 }
 
-function selectedObj(object, deselect = true){
+function selectedObj(object, deselect = true, color = 0xff0000){
     
     // if(!lastSelected){
     //     lastSelected = object;
@@ -342,7 +341,7 @@ function selectedObj(object, deselect = true){
         }
 
         const m = object.material.clone();
-        m.emissive.setHex(0xff0000);
+        m.emissive.setHex(color);
         object.material = m;
         
     }
@@ -424,6 +423,7 @@ export default function App() {
     const [searchPiece, setSearchPiece] = useState();
     const [searchModelOffset, setModelOffset] = useState();
     const [searchCameraOffset, setCameraOffset] = useState(2.25);
+    const [selectionColor, setSelectionColor] = useState(2.25);
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
@@ -488,12 +488,21 @@ export default function App() {
         // check to make sure that if a selected piece was passed to select it, just in case it was not selected before
         if(searchPiece){
             // selectPiece(searchPiece);
-            console.log(searchPiece);
-            if(searchPiece.length == 1){
-                selectPiece(searchPiece[0]);
-            }
-            else{
-                for(let i = 0; i < searchPiece.length; i++){
+            // console.log(searchPiece);
+            // if(searchPiece.length == 1){
+            //     selectPiece(searchPiece[0]);
+            // }
+            // else{
+            //     for(let i = 0; i < searchPiece.length; i++){
+            //         selectPiece(searchPiece[i], false);
+            //     }
+            // }
+            for(let i = 0; i < searchPiece.length; i++){
+                // console.log(lastColor);
+                if(selectionColor[i]){
+                    selectPiece(searchPiece[i], false, selectionColor[i]);
+                }
+                else{
                     selectPiece(searchPiece[i], false);
                 }
             }
@@ -579,14 +588,24 @@ export default function App() {
 
     useEffect(() => {
         if(model){
-            console.log(searchPiece);
-            if(searchPiece.length == 1){
-                selectPiece(searchPiece[0]);
-            }
-            else{
+            if(searchPiece){
+                // if(searchPiece.length == 1){
+                //     selectPiece(searchPiece[0]);
+                // }
+                //else{
+                var lastColor;
                 for(let i = 0; i < searchPiece.length; i++){
-                    selectPiece(searchPiece[i], false);
+                    if(selectionColor[i]){
+                        lastColor = selectionColor[i];
+                    }
+                    if(lastColor){
+                        selectPiece(searchPiece[i], false, lastColor);
+                    }
+                    else{
+                        selectPiece(searchPiece[i], false);
+                    }
                 }
+                //}
             }
         }
         else{
@@ -594,7 +613,7 @@ export default function App() {
                 console.log("no model available to select piece");
             }
         }
-    }, [searchPiece]);
+    }, [searchPiece, selectionColor]);
 
     // useEffect(() => {
     //     // change BG color here
@@ -615,6 +634,7 @@ export default function App() {
         const selectedpiece = searchParams.get("piece");
         const modelOffset = searchParams.get("modelOffset");
         const camOffset = searchParams.get("cameraOffset");
+        const selColor = searchParams.get("selectionColor");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -642,7 +662,6 @@ export default function App() {
                     piecesToSelect.push(q);
                 }
             }
-            console.log(piecesToSelect);
             setSearchPiece(piecesToSelect);
         }
         if(modelOffset){
@@ -662,6 +681,19 @@ export default function App() {
         if(camOffset){
             setCameraOffset(camOffset);
         }
+        if(selColor){
+            // parse into array
+            const colors = selColor.split(",");
+            var newColors = [];
+            for(let i = 0; i < colors.length; i++){
+                // add the leading 0x and add to array
+                // const c = Number(colors[i]); // to make it a hex value
+                const colorToAdd = "0x" + colors[i];
+                // const c = Number(colorToAdd);
+                newColors.push(colorToAdd);
+            }
+            setSelectionColor(newColors);
+        }
 
         return () => {
             window.removeEventListener("showAdmin", showHideIcon);
@@ -669,13 +701,13 @@ export default function App() {
     }, []);
 
     // function to handle everything about selecting a piece
-    function selectPiece(index, deselect = true){
+    function selectPiece(index, deselect = true, color = 0xff0000){
         if(model){
             const objToSelect = model.children[index];
             setSelectedIndex(index); // when selecting multiple, last index is the one that will be used for tabbing
             if(objToSelect){
                 setTarget(objToSelect);
-                selectedObj(objToSelect, deselect);
+                selectedObj(objToSelect, deselect, color);
             }
             else{
                 console.log("index too large: " + index + " of maximum " + model.children.length);
@@ -871,10 +903,11 @@ export default function App() {
                         RIGHT: THREE.MOUSE.PAN,
                     }}
                     />
-                    <mesh position={[0,0,0]} scale={0.05} >
+                    {/* Just here to serve as a point of reference */}
+                    {/* <mesh position={[0,0,0]} scale={0.05} >
                         <sphereGeometry />
                         <meshStandardMaterial color="black" transparent />
-                    </mesh>
+                    </mesh> */}
                 </Suspense>
             </Canvas>
         </>
