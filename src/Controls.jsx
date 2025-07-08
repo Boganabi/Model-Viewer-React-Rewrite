@@ -19,6 +19,7 @@ export default function(props) {
                         <p className='betterText'>Rotate: </p>
                         <p className='betterText'>Zoom: </p>
                         <p className='betterText'>Pan: </p>
+                        <p className='betterText'>Toggle move piece with mouse: </p>
                     </div>
                     <div className='ControlKeys'>
                         {/* workaround for weird thing going in where bold text doesnt work with the css padding */}
@@ -42,6 +43,9 @@ export default function(props) {
                         </div>
                         <div className='keysPadding'>
                             <b className='betterText'>Right Mouse</b>
+                        </div>
+                        <div className='keysPadding'>
+                            <b className='betterText'>Space</b>
                         </div>
                     </div>
                 </div>

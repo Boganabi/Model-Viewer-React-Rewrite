@@ -11,6 +11,7 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Leva, useControls } from 'leva';
 import { useSearchParams } from 'react-router-dom';
+import { useDrag } from '@use-gesture/react';
 import create from 'zustand';
 import PopupMenu from './Popup.jsx';
 import Widget from './TopLeftWidget.jsx';
@@ -58,9 +59,17 @@ const delay = ms => new Promise(
 function Scene(props) {
     const setTarget = useStore((state) => state.setTarget);
     const [hovered, setHovered] = useState(false);
+    const [canDrag, setCanDrag] = useState(false);
+
+    var useMouse = false;
+    var plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+    var raycaster = new THREE.Raycaster();
+    var intersect = new THREE.Vector3();
+
     useCursor(hovered);
 
-    const { scene, camera } = useThree();
+    const { scene, camera, size, viewport } = useThree();
+    const aspect = size.width / viewport.width;
     const { gl } = useThree();
 
     //workaround for weird ghosting bug from postprocessing
@@ -256,13 +265,6 @@ function Scene(props) {
         url = props.modelURL;
     }
 
-    // spin animation
-    // useFrame(({clock}) => {
-    //     if(props.getModel && canSpin){
-    //         props.getModel.rotation.y = clock.elapsedTime;
-    //     }
-    // });
-
     // handle a keypress here
     useEffect(() => {
         function handleKeyDown(e) {
@@ -280,6 +282,12 @@ function Scene(props) {
                     selectedObj(newSelectedObject);
                     setTarget(newSelectedObject);
                     props.selectedIndex(newSelectedObject);
+                }
+                if(childIndex === -1){
+                    // alt key pressed
+                    useMouse = !useMouse;
+                    props.doControls(!useMouse);
+                    setCanDrag(useMouse); // weird workaround bc of strange state updating
                 }
                 props.snap();
             }
@@ -308,10 +316,23 @@ function Scene(props) {
             window.removeEventListener('setState', setScene);
         }
     }, []);
+
+    const bind = useDrag(({ down, movement: [mx, my] }) => {
+        if(canDrag && props.currSelect && down){
+            // set plane to cover the camera viewport somehow
+            plane.setFromNormalAndCoplanarPoint(camera.position.clone().normalize(), props.currSelect.position);
+            // move object relative to plane
+            raycaster.setFromCamera(new THREE.Vector2(mx / (aspect * 2), -my / (aspect * 2)), camera);
+            raycaster.ray.intersectPlane(plane, intersect);
+            props.currSelect.position.set(intersect.x, intersect.y, intersect.z);
+            props.snap();
+        }
+    });     
+
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
-            {props.getModel && <primitive {...props} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} }  object = {props.getModel} />}
+            {props.getModel && <primitive {...props} {...bind()} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} }  object = {props.getModel} />}
             {!props.getModel &&  <>
                             <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
                             <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
@@ -333,10 +354,13 @@ function selectedObj(object, deselect = true, color = 0xff0000){
 
     if(object){
 
-        tempHex = object.material.emissive.getHex();
+        // tempHex = object.material.emissive.getHex();
+        // console.log(tempHex);
         if(deselect){
             for(let i = 0; i < lastSelected.length; i++){
-                lastSelected[i].material.emissive.setHex(tempHex);
+                if(lastSelected[i]){
+                    lastSelected[i].material.emissive.setHex(0);
+                }   
             }
         }
 
@@ -349,7 +373,9 @@ function selectedObj(object, deselect = true, color = 0xff0000){
         if(lastSelected){
             if(deselect){
                 for(let i = 0; i < lastSelected.length; i++){
-                    lastSelected[i].material.emissive.setHex(tempHex);
+                    if(lastSelected[i]){
+                        lastSelected[i].material.emissive.setHex(0);
+                    }
                 }
             }
         }
@@ -424,6 +450,8 @@ export default function App() {
     const [searchModelOffset, setModelOffset] = useState();
     const [searchCameraOffset, setCameraOffset] = useState(2.25);
     const [selectionColor, setSelectionColor] = useState(2.25);
+    const [showPanel, setShowPanel] = useState(false);
+    const [paramAutoSpin, setParamAutoSpin] = useState(true);
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
@@ -446,6 +474,7 @@ export default function App() {
     const [showIcon, setShowIcon] = useState(false);
     const [canRotate, setCanRotate] = useState(true);
     const [autoRot, setAutoRot] = useState(true);
+    const [enableContrls, setEnableControls] = useState(true);
 
     // to handle via url which types can be shown
     const [allowJigsaw, setAllowJigsaw] = useState(false);
@@ -514,7 +543,9 @@ export default function App() {
             setAutoRot(false);
         }
         else{
-            setAutoRot(true);
+            if(paramAutoSpin){
+                setAutoRot(true);
+            }
         }
     }, [target]);
 
@@ -635,6 +666,8 @@ export default function App() {
         const modelOffset = searchParams.get("modelOffset");
         const camOffset = searchParams.get("cameraOffset");
         const selColor = searchParams.get("selectionColor");
+        const showPanel = searchParams.get("panel");
+        const spin = searchParams.get("autospin");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -693,6 +726,13 @@ export default function App() {
                 newColors.push(colorToAdd);
             }
             setSelectionColor(newColors);
+        }
+        if(showPanel){
+            setShowPanel(true);
+        }
+        if(spin){
+            setAutoRot(false);
+            setParamAutoSpin(false);
         }
 
         return () => {
@@ -874,7 +914,7 @@ export default function App() {
                     React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
                 ))
             }/>}
-            <Leva hidden={!model || model.children.length === 1} />
+            <Leva hidden={!model || model.children.length === 1 || showPanel} />
             {target && allowTextInput && <>
                 <button className="clickable submit" onClick={handleSubmission}>Submit</button>
                 <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
@@ -887,22 +927,22 @@ export default function App() {
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
-                    {target && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
+                    {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
                     {!backgroundurl && <>
                         <ambientLight intensity={2.5} />
                         {/* <hemisphereLight skyColor="#FFFFFF" groundColor="#444444" intensity={1} /> */}
                         <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={4} castShadow decay={0} />
                         <pointLight position = {[-10, -10, -10]} intensity={2} decay={0} />
                     </>}
-                    <OrbitControls autoRotate={autoRot} enableRotate={canRotate} mouseButtons={{
+                    {enableContrls && <OrbitControls autoRotate={autoRot} enableRotate={canRotate} mouseButtons={{
                         MIDDLE: THREE.MOUSE.ZOOM,
                         LEFT: THREE.MOUSE.ROTATE,
                         RIGHT: THREE.MOUSE.PAN,
                     }}
-                    />
+                    />}
                     {/* Just here to serve as a point of reference */}
                     {/* <mesh position={[0,0,0]} scale={0.05} >
                         <sphereGeometry />

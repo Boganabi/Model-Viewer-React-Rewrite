@@ -153,7 +153,10 @@ export default function doKey(e, m, cameraRef, sceneRef, objRef, RATE) {
                 return 0;
             }
             // return -1;
-
+        case "Space":
+            // let the user move a piece around with the mouse
+            // need to block the default left click (rotate)
+            return -1; // let the scene component handle all this tho
         default:
             break;
     }
