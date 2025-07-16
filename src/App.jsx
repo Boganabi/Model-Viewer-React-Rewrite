@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState, } from 'react';
+import React, { Suspense, useEffect, useState, useRef } from 'react';
 import * as THREE from 'three';
 // import axios from 'redaxios';
 import axios from 'axios';
@@ -60,6 +60,8 @@ function Scene(props) {
     const setTarget = useStore((state) => state.setTarget);
     const [hovered, setHovered] = useState(false);
     const [canDrag, setCanDrag] = useState(false);
+    // const [moveList, setMoveList] = useState([]);
+    const moveList = useRef([]); // bc standard variable was always refreshed and stateful caused too many rerenders
 
     var useMouse = false;
     var plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -289,6 +291,14 @@ function Scene(props) {
                     props.doControls(!useMouse);
                     setCanDrag(useMouse); // weird workaround bc of strange state updating
                 }
+                if(childIndex === -2){
+                    // undo move
+                    console.log(moveList.current);
+                    let lastMove = moveList.current.pop();
+                    if(lastMove){
+                        lastMove.item.position.set(lastMove.pos.x, lastMove.pos.y, lastMove.pos.z);
+                    }
+                }
                 props.snap();
             }
         }
@@ -318,7 +328,7 @@ function Scene(props) {
     }, []);
 
     const bind = useDrag(({ down, movement: [mx, my] }) => {
-        if(canDrag && props.currSelect && down){
+        if((canDrag || props.menuMouse) && props.currSelect && down){
             // set plane to cover the camera viewport somehow
             plane.setFromNormalAndCoplanarPoint(camera.position.clone().normalize(), props.currSelect.position);
             // move object relative to plane
@@ -327,12 +337,26 @@ function Scene(props) {
             props.currSelect.position.set(intersect.x, intersect.y, intersect.z);
             props.snap();
         }
-    });     
+    });
+
+    function addMove(piece){
+        if(piece){
+            let move = {
+                item: piece,
+                rot: piece.rotation.clone(),
+                pos: piece.position.clone()
+            };
+            let prevMove = moveList.current[moveList.current.length - 1];
+            if(prevMove != move){
+                moveList.current.push(move);
+            }
+        }
+    }
 
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
-            {props.getModel && <primitive {...props} {...bind()} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} }  object = {props.getModel} />}
+            {props.getModel && <primitive {...props} {...bind()} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ addMove(props.currSelect) } object = {props.getModel} />}
             {!props.getModel &&  <>
                             <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
                             <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
@@ -425,7 +449,7 @@ export default function App() {
 
     const inputAttempt = [];
     const { target, setTarget } = useStore();
-    const [{ mode, showTransformControls, enableHDRI, BGColor }, set] = useControls(() => ({ 
+    const [{ mode, showTransformControls, enableHDRI, useMouse, BGColor }, set] = useControls(() => ({ 
         mode: { 
             value: 'translate', 
             options: ['translate', 'rotate'] 
@@ -435,6 +459,9 @@ export default function App() {
         },
         enableHDRI: {
             value: true,
+        },
+        useMouse: {
+            value: false,
         },
         // BGColor: {
         //     value: "#d3d3d3",
@@ -914,7 +941,7 @@ export default function App() {
                     React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
                 ))
             }/>}
-            <Leva hidden={!model || model.children.length === 1 || showPanel} />
+            <Leva collapsed hidden={!model || model.children.length === 1 || showPanel} />
             {target && allowTextInput && <>
                 <button className="clickable submit" onClick={handleSubmission}>Submit</button>
                 <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
@@ -927,7 +954,7 @@ export default function App() {
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} menuMouse={useMouse} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}
@@ -937,7 +964,7 @@ export default function App() {
                         <spotLight position = {[10, 10, 10]} angle = {0.15} penumbra = {1} intensity={4} castShadow decay={0} />
                         <pointLight position = {[-10, -10, -10]} intensity={2} decay={0} />
                     </>}
-                    {enableContrls && <OrbitControls autoRotate={autoRot} enableRotate={canRotate} mouseButtons={{
+                    {enableContrls && <OrbitControls autoRotate={autoRot} enableRotate={canRotate && !useMouse} mouseButtons={{
                         MIDDLE: THREE.MOUSE.ZOOM,
                         LEFT: THREE.MOUSE.ROTATE,
                         RIGHT: THREE.MOUSE.PAN,
