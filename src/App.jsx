@@ -2,8 +2,8 @@ import React, { Suspense, useEffect, useState, useRef } from 'react';
 import * as THREE from 'three';
 // import axios from 'redaxios';
 import axios from 'axios';
-import { Canvas, useLoader, useThree, addEffect } from '@react-three/fiber';
-import { OrbitControls, TransformControls, useCursor, Icosahedron } from '@react-three/drei';
+import { Canvas, useLoader, useThree, useFrame, addEffect } from '@react-three/fiber';
+import { OrbitControls, TransformControls, useCursor, Icosahedron, Html } from '@react-three/drei';
 import { Select } from '@react-three/postprocessing';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
@@ -25,7 +25,7 @@ import Effects from './PostEffects.jsx';
 
 /*
 TODO LIST
-- look into moving pieces directly with the mouse
+animations (test?)
 */
 
 const useStore = create((set) => ({ target: null, setTarget: (target) => set({ target }) }));
@@ -60,8 +60,11 @@ function Scene(props) {
     const setTarget = useStore((state) => state.setTarget);
     const [hovered, setHovered] = useState(false);
     const [canDrag, setCanDrag] = useState(false);
-    // const [moveList, setMoveList] = useState([]);
+    const [annotationData, setAnnotationData] = useState();
+    const [annotations, setAnnotations] = useState([]);
+
     const moveList = useRef([]); // bc standard variable was always refreshed and stateful caused too many rerenders
+    var undoIndex = useRef(-1);
 
     var useMouse = false;
     var plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -91,41 +94,11 @@ function Scene(props) {
         // // get bounding box of object
         boundingBox.setFromObject(object);
 
-        // var centerVec = new THREE.Vector3();
-        // const center = boundingBox.getCenter(centerVec);
-
-        // let measure = new THREE.Vector3();
-        // const size = boundingBox.getSize(measure);
-
         const {center, size} = getBoundsOfObject(object);
-
-        // temp stuff to draw box
-        // console.log(measure);
-        // console.log(size);
-        // const helper = new THREE.Box3Helper(boundingBox);
-        // scene.add(helper);
 
         // get the max side of the bounding box (fits to width OR height as needed)
         const maxDim = Math.max(size.x, size.y, size.z);
-        // console.log(maxDim);
-        // const fov = camera.fov * (Math.PI / 180);
-        // let cameraZ = Math.abs(maxDim / 4 * Math.tan(fov * 2));
 
-        // console.log(cameraZ);
-
-        // cameraZ *= offset; // zoom out a bit
-
-        // console.log(cameraZ);
-
-        // camera.position.z = center.z + cameraZ;
-
-        // const minZ = boundingBox.min.z;
-        // const cameraToFarEdge = (minZ < 0) ? -minZ + cameraZ : cameraZ - minZ;
-
-        // camera.far = cameraToFarEdge * 3;
-        // camera.updateProjectionMatrix();
-
-        // my own solution:
         camera.position.x = center.x;
         camera.position.y = center.y;
         camera.position.z = (offset * (maxDim / 2) / Math.cos(camera.fov / 2)) + center.z;
@@ -146,6 +119,7 @@ function Scene(props) {
 
     if (props.modelURL && props.modelURL !== url) {
         var newModel;
+        // console.log(props.ext);
         if(props.ext === "glb"){
             const gltf = useLoader(GLTFLoader, props.modelURL);
             newModel = gltf.scene;
@@ -246,7 +220,8 @@ function Scene(props) {
         }
         if(props.ext === "stl"){
             const s = useLoader(STLLoader, props.modelURL);
-            newModel = s;
+            const mesh = new THREE.Mesh(s);
+            newModel = new THREE.Group().add(mesh); // s;
             // props.changeModel(s);
             // centerModel(s);
             // fitCameraToObject(camera, s);
@@ -285,7 +260,7 @@ function Scene(props) {
                     setTarget(newSelectedObject);
                     props.selectedIndex(newSelectedObject);
                 }
-                if(childIndex === -1){
+                if(childIndex === -1 && modelRef.children.length != 1){
                     // alt key pressed
                     useMouse = !useMouse;
                     props.doControls(!useMouse);
@@ -293,10 +268,18 @@ function Scene(props) {
                 }
                 if(childIndex === -2){
                     // undo move
-                    console.log(moveList.current);
-                    let lastMove = moveList.current.pop();
+                    let lastMove = moveList.current[undoIndex.current - 1]; // moveList.current.pop();
                     if(lastMove){
                         lastMove.item.position.set(lastMove.pos.x, lastMove.pos.y, lastMove.pos.z);
+                        undoIndex.current--;
+                    }
+                }
+                if(childIndex === -3){
+                    // redo move
+                    let nextMove = moveList.current[undoIndex.current];
+                    if(nextMove){
+                        nextMove.item.position.set(nextMove.pos.x, nextMove.pos.y, nextMove.pos.z);
+                        undoIndex.current++;
                     }
                 }
                 props.snap();
@@ -319,6 +302,15 @@ function Scene(props) {
         window.addEventListener('getState', returnState);
         window.addEventListener('setState', setScene);
 
+        // get list of annotations from json object
+        if(props.jsonURL){
+            fetch(props.jsonURL).then((res) => res.json()).then((data) => {
+                // console.log(data);
+                setAnnotationData(data);
+                
+            });
+        }
+
         // cleanup the event listener
         return function cleanup() {
             document.removeEventListener('keydown', handleKeyDown);
@@ -326,6 +318,34 @@ function Scene(props) {
             window.removeEventListener('setState', setScene);
         }
     }, []);
+
+    useEffect(() => {
+        // assign each annotation to an object
+        if(annotationData && props.getModel){
+            var a = [];
+            for(let i = 0; i < annotationData.annotations.length; i++){
+                // let annotationIndex = Object.keys(annotationData.annotations[i])[0];
+                let annotationIndex = annotationData.annotations[i].index;
+                // let annotationText = Object.values(annotationData.annotations[i])[0];
+                let annotationText = annotationData.annotations[i].text;
+                let annotationPos = annotationData.annotations[i].position;
+                let annotatedPiece = props.getModel.children[annotationIndex];
+                if(annotatedPiece){
+                    a.push({
+                        piece: annotatedPiece,
+                        index: annotationIndex,
+                        text: annotationText,
+                        pos: annotationPos
+                    }); // add html in the jsx below
+                }
+                else{
+                    console.log("No piece found at index " + annotationIndex + " that matches an annotation");
+                }
+            }
+            // console.log(a);
+            setAnnotations(a);
+        }
+    }, [props.getModel, annotationData]); // since both model loading and fetching annotations is async
 
     const bind = useDrag(({ down, movement: [mx, my] }) => {
         if((canDrag || props.menuMouse) && props.currSelect && down){
@@ -339,6 +359,20 @@ function Scene(props) {
         }
     });
 
+    // animations
+    let mixer;
+    if(props.getModel?.animations.length){
+        mixer = new THREE.AnimationMixer(props.getModel);
+        props.getModel.animations.forEach(clip => {
+            const action = mixer.clipAction(clip);
+            action.play();
+        });
+    }
+
+    useFrame((state, delta) => {
+        mixer?.update(delta);
+    });
+
     function addMove(piece){
         if(piece){
             let move = {
@@ -348,15 +382,55 @@ function Scene(props) {
             };
             let prevMove = moveList.current[moveList.current.length - 1];
             if(prevMove != move){
+                // remove any undone moves
+                moveList.current = moveList.current.slice(0, undoIndex.current);
                 moveList.current.push(move);
+                undoIndex.current++;
             }
         }
+    }
+
+    function getObjectCenter(object){
+        const boundingBox = new THREE.Box3();
+
+        // get bounding box of object
+        boundingBox.setFromObject(object);
+
+        var centerVec = new THREE.Vector3();
+        return boundingBox.getCenter(centerVec);
+    }
+
+    function parseToCoords(info){
+        // console.log(position);
+        let x = Number(info.pos.x) + info.piece.position.x;
+        let y = Number(info.pos.y) + info.piece.position.y;
+        let z = Number(info.pos.z) + info.piece.position.z;
+        let pos = [x, y, z];
+        // console.log(pos);
+        return pos;
     }
 
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
-            {props.getModel && <primitive {...props} {...bind()} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ addMove(props.currSelect) } object = {props.getModel} />}
+            {props.getModel && <>
+                    <primitive {...props} {...bind()} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ addMove(props.currSelect) } object = {props.getModel} />
+                    {annotations.map((o, index) => (
+                        <Html
+                            key={index}
+                            // transform
+                            // sprite
+                            // center
+                            // distanceFactor={0.0002}
+                            // position={getObjectCenter(o.piece)}
+                            position={parseToCoords(o)}
+                            // occlude
+                        >
+                            <div className="annotation">{o.text}</div>
+                            {/* <div className="annotation">{o.index}</div> */}
+                        </Html>
+                    ))}
+                </>}
             {!props.getModel &&  <>
                             <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
                             <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
@@ -413,6 +487,9 @@ function selectedObj(object, deselect = true, color = 0xff0000){
 function findParentModel(child){
     // console.log(child);
     if(child){
+        if(!child.children){
+            return child;
+        }
         if (child.children[0] instanceof THREE.Mesh || child.children[0].isObject3D){
             return child
         }
@@ -479,6 +556,7 @@ export default function App() {
     const [selectionColor, setSelectionColor] = useState(2.25);
     const [showPanel, setShowPanel] = useState(false);
     const [paramAutoSpin, setParamAutoSpin] = useState(true);
+    const [annotations, setAnnotations] = useState();
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
@@ -509,6 +587,7 @@ export default function App() {
     const [allowTextInput, setAllowTextInput] = useState(false);
 
     const callbackFunction = (childData, isUploaded, preview) => {
+        // console.log(childData);
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
             filetype = childData.name.split(".")[1];
@@ -516,7 +595,20 @@ export default function App() {
         else {
             sceneUrl = childData;
             // since file will always be a glb on the database (for small storage) then we can just set the filetype to glb
-            filetype = "glb";
+            // filetype = "glb";
+
+            // requirements change, filetype could be anything. so fetch the file type:
+            (async () => {
+                const response = await fetch(sceneUrl, {
+                    method: 'HEAD'
+                });
+                filetype = response.headers.get('Content-Type').slice(-3); // since only the last three letters are important
+                if(filetype === "ary"){
+                    filetype = "glb"; // probably a stupid fix but glb files return "gltf-binary" as content type
+                }
+                // console.log(filetype);
+                updateExt(filetype);
+            })();
         }
         setImg(preview);
         changeURL(sceneUrl);
@@ -695,6 +787,7 @@ export default function App() {
         const selColor = searchParams.get("selectionColor");
         const showPanel = searchParams.get("panel");
         const spin = searchParams.get("autospin");
+        const jsonurl = searchParams.get("annotations");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -760,6 +853,9 @@ export default function App() {
         if(spin){
             setAutoRot(false);
             setParamAutoSpin(false);
+        }
+        if(jsonurl){
+            setAnnotations(jsonurl);
         }
 
         return () => {
@@ -954,7 +1050,7 @@ export default function App() {
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} menuMouse={useMouse} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} menuMouse={useMouse} jsonURL={annotations} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}

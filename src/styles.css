@@ -330,15 +330,6 @@ input[type="file"]:hover {
   width: 650px;
 }
 
-.ControlDisplay{
-  margin-left: 20%;
-  float: left;  
-}
-
-.ControlKeys{
-  margin-left: 50%;
-}
-
 .keysPadding{
   margin-top: 16px;
   margin-bottom: 16px;
@@ -403,6 +394,27 @@ input[type="file"]:hover {
 .nameentry:focus {
   border: 3px solid #555;
   box-shadow: 0 8px 16px 0 rgba(0,0,0,0.15), 0 6px 20px 0 rgba(0,0,0,0.11);
+}
+
+.annotation {
+  transform: translate3d(calc(50%), calc(-50%), 0);
+  text-align: left;
+  background: #181c20;
+  color: #8c92a4;
+  padding: 10px 15px;
+  border-radius: 5px;
+  user-select: none;
+  font-family: var(--leva-fonts-mono);
+}
+
+.annotation::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: -30px;
+  height: 2px;
+  width: 30px;
+  background: #181c20;
 }
 
 .leva-c-kWgxhW-bCBHqk-fill-false {

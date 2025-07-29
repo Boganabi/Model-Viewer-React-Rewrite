@@ -12,18 +12,20 @@ export default function(props) {
                 <div className='centeredBoi'>
                     <h2>Controls</h2>
                     <div className='ControlDisplay'>
-                        <p className='betterText'>Move selected piece: </p>
-                        <p className='betterText'>Move entire model: </p>
-                        <p className='betterText'>Rotate selected piece: </p>
-                        <p className='betterText'>Rotate entire model: </p>
-                        <p className='betterText'>Rotate: </p>
-                        <p className='betterText'>Zoom: </p>
-                        <p className='betterText'>Pan: </p>
-                        <p className='betterText'>Toggle move piece with mouse: </p>
+                        <p className='betterText'>Move selected piece: <b>w/a/s/d/q/e</b></p>
+                        <p className='betterText'>Move entire model: <b>Shift + w/a/s/d/q/e</b></p>
+                        <p className='betterText'>Rotate selected piece: <b>i/j/k/l/u/o</b></p>
+                        <p className='betterText'>Rotate entire model: <b>Arrow Keys</b></p>
+                        <p className='betterText'>Rotate: <b>Left Mouse</b></p>
+                        <p className='betterText'>Zoom: <b>Scroll Wheel</b></p>
+                        <p className='betterText'>Pan: <b>Right Mouse</b></p>
+                        <p className='betterText'>Toggle move piece with mouse: <b>Space </b></p>
+                        <p className='betterText'>Undo move: <b>z </b></p>
+                        <p className='betterText'>Redo move <b>y </b></p>
                     </div>
-                    <div className='ControlKeys'>
+                    {/* <div className='ControlKeys'> */}
                         {/* workaround for weird thing going in where bold text doesnt work with the css padding */}
-                        <div className='keysPadding'>
+                        {/* <div className='keysPadding'>
                             <b className='betterText'>w/a/s/d/q/e</b>
                         </div>
                         <div className='keysPadding'>
@@ -46,8 +48,8 @@ export default function(props) {
                         </div>
                         <div className='keysPadding'>
                             <b className='betterText'>Space</b>
-                        </div>
-                    </div>
+                        </div> */}
+                    {/* </div> */}
                 </div>
             </ Popup>
         </>
