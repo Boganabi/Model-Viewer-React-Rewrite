@@ -70,6 +70,7 @@ function Scene(props) {
     var plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
     var raycaster = new THREE.Raycaster();
     var intersect = new THREE.Vector3();
+    var reloadModel = false;
 
     useCursor(hovered);
 
@@ -117,10 +118,11 @@ function Scene(props) {
         model.position.z -= center.z
     }
 
-    if (props.modelURL && props.modelURL !== url) {
+    if ((props.modelURL && props.modelURL !== url && props.ext)) {
         var newModel;
         // console.log(props.ext);
         if(props.ext === "glb"){
+            // console.log("in glb");
             const gltf = useLoader(GLTFLoader, props.modelURL);
             newModel = gltf.scene;
             // props.changeModel(gltf.scene);
@@ -219,6 +221,7 @@ function Scene(props) {
             // fitCameraToObject(camera, obj);
         }
         if(props.ext === "stl"){
+            // console.log("using stl!!!!");
             const s = useLoader(STLLoader, props.modelURL);
             const mesh = new THREE.Mesh(s);
             newModel = new THREE.Group().add(mesh); // s;
@@ -240,6 +243,8 @@ function Scene(props) {
             fitCameraToObject(camera, newModel, props.camOffset);
         }
         url = props.modelURL;
+
+        reloadModel = false;
     }
 
     // handle a keypress here
@@ -346,6 +351,11 @@ function Scene(props) {
             setAnnotations(a);
         }
     }, [props.getModel, annotationData]); // since both model loading and fetching annotations is async
+
+    // useEffect(() => {
+    //     console.log("extension changed");
+    //     reloadModel = true;
+    // }, [props.ext]);
 
     const bind = useDrag(({ down, movement: [mx, my] }) => {
         if((canDrag || props.menuMouse) && props.currSelect && down){
@@ -587,7 +597,7 @@ export default function App() {
     const [allowTextInput, setAllowTextInput] = useState(false);
 
     const callbackFunction = (childData, isUploaded, preview) => {
-        // console.log(childData);
+        console.log(childData);
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
             filetype = childData.name.split(".")[1];
@@ -595,17 +605,27 @@ export default function App() {
         else {
             sceneUrl = childData;
             // since file will always be a glb on the database (for small storage) then we can just set the filetype to glb
-            // filetype = "glb";
+            // filetype = "stl";
 
             // requirements change, filetype could be anything. so fetch the file type:
             (async () => {
+                // await delay(1000);
                 const response = await fetch(sceneUrl, {
                     method: 'HEAD'
                 });
-                filetype = response.headers.get('Content-Type').slice(-3); // since only the last three letters are important
-                if(filetype === "ary"){
-                    filetype = "glb"; // probably a stupid fix but glb files return "gltf-binary" as content type
+                const r = response.headers.get('Content-Disposition');
+                // console.log(r);
+                if(!r){
+                    const backup = response.headers.get('Content-Type');
+                    filetype = backup.slice(-3);
+                    if(filetype === "ary"){
+                        filetype = "glb"; // probably a stupid fix but glb files return "gltf-binary" as content type
+                    }
                 }
+                else{
+                    filetype = r.slice(-3); // since only the last three letters are important
+                }
+                // console.log(response.headers.get('Content-Disposition'));
                 // console.log(filetype);
                 updateExt(filetype);
             })();
@@ -655,7 +675,7 @@ export default function App() {
                 }
             }
         }
-    }, [model, checkedURL]);
+    }, [model, checkedURL, extension]);
 
     useEffect(() => {
         if(target){
