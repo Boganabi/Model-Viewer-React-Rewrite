@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // import axios from 'redaxios';
 import axios from 'axios';
 import { Canvas, useLoader, useThree, useFrame, addEffect } from '@react-three/fiber';
-import { OrbitControls, TransformControls, useCursor, Icosahedron, Html } from '@react-three/drei';
+import { OrbitControls, TransformControls, useCursor, Icosahedron } from '@react-three/drei';
 import { Select } from '@react-three/postprocessing';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
@@ -22,6 +22,7 @@ import Reconstruction from './Reconstruction.jsx';
 import SelectionDropdown from './SelectionDropdown.jsx';
 import Controls from './Controls.jsx';
 import Effects from './PostEffects.jsx';
+import Annotation from './Annotation.jsx';
 
 /*
 TODO LIST
@@ -62,6 +63,7 @@ function Scene(props) {
     const [canDrag, setCanDrag] = useState(false);
     const [annotationData, setAnnotationData] = useState();
     const [annotations, setAnnotations] = useState([]);
+    const [selectedAnnotation, setSelectedAnnotation] = useState(-1);
 
     const moveList = useRef([]); // bc standard variable was always refreshed and stateful caused too many rerenders
     var undoIndex = useRef(-1);
@@ -223,7 +225,10 @@ function Scene(props) {
         if(props.ext === "stl"){
             // console.log("using stl!!!!");
             const s = useLoader(STLLoader, props.modelURL);
-            const mesh = new THREE.Mesh(s);
+            let newmat = Number(props.stlMatColor);
+            const mat = new THREE.MeshStandardMaterial();
+            mat.color.set(newmat);
+            const mesh = new THREE.Mesh(s, mat);
             newModel = new THREE.Group().add(mesh); // s;
             // props.changeModel(s);
             // centerModel(s);
@@ -302,14 +307,30 @@ function Scene(props) {
             props.changeModel(event.currentTarget.value);
         }
 
+        const setAnnotations = (event) => {
+            console.log("setting annotation file");
+            setAnnotations(event.currentTarget.value);
+        }
+
         document.addEventListener('keydown', handleKeyDown);
 
         window.addEventListener('getState', returnState);
         window.addEventListener('setState', setScene);
+        window.addEventListener('setAnnotations', setAnnotations);
 
         // get list of annotations from json object
         if(props.jsonURL){
-            fetch(props.jsonURL).then((res) => res.json()).then((data) => {
+            let annoQuery = props.jsonURL;
+            if(!annoQuery.includes("direct=true")){
+                if(!annoQuery.includes("?")){
+                    annoQuery += "?";
+                }
+                else{
+                    annoQuery += "&";
+                }
+                annoQuery += "direct=true";
+            }
+            fetch(annoQuery).then((res) => res.json()).then((data) => {
                 // console.log(data);
                 setAnnotationData(data);
                 
@@ -321,6 +342,7 @@ function Scene(props) {
             document.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('getState', returnState);
             window.removeEventListener('setState', setScene);
+            window.removeEventListener('setAnnotations', setAnnotations);
         }
     }, []);
 
@@ -351,6 +373,16 @@ function Scene(props) {
             setAnnotations(a);
         }
     }, [props.getModel, annotationData]); // since both model loading and fetching annotations is async
+
+    useEffect(() => {
+        // console.log("set to", selectedAnnotation);
+        if(selectedAnnotation > -1){
+            props.changeAutoRot(false);
+        }
+        else{
+            // props.changeAutoRot(true);
+        }
+    }, [selectedAnnotation])
 
     // useEffect(() => {
     //     console.log("extension changed");
@@ -410,35 +442,13 @@ function Scene(props) {
         return boundingBox.getCenter(centerVec);
     }
 
-    function parseToCoords(info){
-        // console.log(position);
-        let x = Number(info.pos.x) + info.piece.position.x;
-        let y = Number(info.pos.y) + info.piece.position.y;
-        let z = Number(info.pos.z) + info.piece.position.z;
-        let pos = [x, y, z];
-        // console.log(pos);
-        return pos;
-    }
-
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
             {props.getModel && <>
-                    <primitive {...props} {...bind()} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ addMove(props.currSelect) } object = {props.getModel} />
+                    <primitive {...props} {...bind()} onPointerMissed = { () => console.log("miss")} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ addMove(props.currSelect) } object = {props.getModel} />
                     {annotations.map((o, index) => (
-                        <Html
-                            key={index}
-                            // transform
-                            // sprite
-                            // center
-                            // distanceFactor={0.0002}
-                            // position={getObjectCenter(o.piece)}
-                            position={parseToCoords(o)}
-                            // occlude
-                        >
-                            <div className="annotation">{o.text}</div>
-                            {/* <div className="annotation">{o.index}</div> */}
-                        </Html>
+                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} />
                     ))}
                 </>}
             {!props.getModel &&  <>
@@ -471,7 +481,6 @@ function selectedObj(object, deselect = true, color = 0xff0000){
                 }   
             }
         }
-
         const m = object.material.clone();
         m.emissive.setHex(color);
         object.material = m;
@@ -567,6 +576,7 @@ export default function App() {
     const [showPanel, setShowPanel] = useState(false);
     const [paramAutoSpin, setParamAutoSpin] = useState(true);
     const [annotations, setAnnotations] = useState();
+    const [stlmat, setStlMat] = useState(0xffffff);
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
@@ -597,7 +607,7 @@ export default function App() {
     const [allowTextInput, setAllowTextInput] = useState(false);
 
     const callbackFunction = (childData, isUploaded, preview) => {
-        console.log(childData);
+        // console.log(childData);
         if(isUploaded){
             sceneUrl = URL.createObjectURL(childData);
             filetype = childData.name.split(".")[1];
@@ -808,6 +818,7 @@ export default function App() {
         const showPanel = searchParams.get("panel");
         const spin = searchParams.get("autospin");
         const jsonurl = searchParams.get("annotations");
+        const stlColor = searchParams.get("STLmatCol");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -876,6 +887,9 @@ export default function App() {
         }
         if(jsonurl){
             setAnnotations(jsonurl);
+        }
+        if(stlColor){
+            setStlMat("0x" + stlColor);
         }
 
         return () => {
@@ -1070,7 +1084,7 @@ export default function App() {
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} menuMouse={useMouse} jsonURL={annotations} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}

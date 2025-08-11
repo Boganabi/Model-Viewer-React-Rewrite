@@ -397,16 +397,28 @@ input[type="file"]:hover {
 }
 
 .annotation {
-  transform: translate3d(calc(50%), calc(-50%), 0);
+  /* transform: translate3d(calc(50%), calc(-50%), 0);
   text-align: left;
   background: #181c20;
   color: #8c92a4;
   padding: 10px 15px;
   border-radius: 5px;
   user-select: none;
-  font-family: var(--leva-fonts-mono);
+  font-family: var(--leva-fonts-mono); */
+  
+  color: white;
+  pointer-events: none;
+  font-size: 14px;
+  position: absolute;
+  top: 20px;
+  padding: 1em;
+  width: 200px;
+  background: rgba(0, 0, 0, 0.50);
+  border-radius: 0.5em;
+  display: block;
 }
 
+/*
 .annotation::before {
   content: '';
   position: absolute;
@@ -415,7 +427,7 @@ input[type="file"]:hover {
   height: 2px;
   width: 30px;
   background: #181c20;
-}
+} */
 
 .leva-c-kWgxhW-bCBHqk-fill-false {
   /* I need the !important here because there is no other way to override the leva class since my css file is loaded first */
