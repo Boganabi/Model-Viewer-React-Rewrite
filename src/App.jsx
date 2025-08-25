@@ -26,7 +26,7 @@ import Annotation from './Annotation.jsx';
 
 /*
 TODO LIST
-animations (test?)
+fix performance issues (camera animation, annotation occlusion)
 */
 
 const useStore = create((set) => ({ target: null, setTarget: (target) => set({ target }) }));
@@ -356,13 +356,15 @@ function Scene(props) {
                 // let annotationText = Object.values(annotationData.annotations[i])[0];
                 let annotationText = annotationData.annotations[i].text;
                 let annotationPos = annotationData.annotations[i].position;
+                let annotationCam = annotationData.annotations[i].camPos;
                 let annotatedPiece = props.getModel.children[annotationIndex];
                 if(annotatedPiece){
                     a.push({
                         piece: annotatedPiece,
                         index: annotationIndex,
                         text: annotationText,
-                        pos: annotationPos
+                        pos: annotationPos,
+                        camPos: annotationCam
                     }); // add html in the jsx below
                 }
                 else{
@@ -448,7 +450,7 @@ function Scene(props) {
             {props.getModel && <>
                     <primitive {...props} {...bind()} onPointerMissed = { () => console.log("miss")} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ addMove(props.currSelect) } object = {props.getModel} />
                     {annotations.map((o, index) => (
-                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} />
+                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} />
                     ))}
                 </>}
             {!props.getModel &&  <>
