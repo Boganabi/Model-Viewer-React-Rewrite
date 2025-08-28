@@ -67,6 +67,7 @@ function Scene(props) {
 
     const moveList = useRef([]); // bc standard variable was always refreshed and stateful caused too many rerenders
     var undoIndex = useRef(-1);
+    const clickHandledRef = useRef(false); // to indicate whether the annotation has already handled the click condition, since race condition was occuring
 
     var useMouse = false;
     var plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -377,9 +378,10 @@ function Scene(props) {
     }, [props.getModel, annotationData]); // since both model loading and fetching annotations is async
 
     useEffect(() => {
-        // console.log("set to", selectedAnnotation);
+        // console.log("new index ", selectedAnnotation);
         if(selectedAnnotation > -1){
             props.changeAutoRot(false);
+            props.pieceSelect(selectedAnnotation);
         }
         else{
             // props.changeAutoRot(true);
@@ -444,13 +446,20 @@ function Scene(props) {
         return boundingBox.getCenter(centerVec);
     }
 
+    function handleClickMiss(){
+        if(!clickHandledRef.current){
+            setSelectedAnnotation(-1);
+        }
+        clickHandledRef.current = false; // reset whether handled or not   
+    }
+
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
             {props.getModel && <>
-                    <primitive {...props} {...bind()} onPointerMissed = { () => console.log("miss")} onClick = {(e) => { setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ addMove(props.currSelect) } object = {props.getModel} />
+                    <primitive {...props} {...bind()} onPointerMissed = {() => { handleClickMiss() }} onClick = {(e) => { setSelectedAnnotation(-1); setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ () => { addMove(props.currSelect) } } object = {props.getModel} />
                     {annotations.map((o, index) => (
-                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} />
+                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} handleref={clickHandledRef} />
                     ))}
                 </>}
             {!props.getModel &&  <>
@@ -1086,7 +1095,7 @@ export default function App() {
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} pieceSelect={selectPiece} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}

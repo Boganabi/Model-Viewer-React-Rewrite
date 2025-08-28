@@ -30,16 +30,6 @@ export default function Annotation(props){
     const [hidden, setHidden] = useState();
 
     const camera = useThree(state => state.camera);
-    // const { scene, camera, size, viewport } = useThree();
-
-    // useFrame(state => {
-    //     if(props.info.index === props.select){
-    //         state.camera.lookAt(parseToCoords(props.info, false));
-    //         // state.camera.position.lerp(parseToCoords(props.info, true), 0.01);
-    //         // state.camera.updateProjectionMatrix();
-    //     }
-    //     // return null;
-    // })
 
     return (
         <Html
@@ -69,11 +59,6 @@ export default function Annotation(props){
                     strokeWidth="2"
                     fill="rgba(0,0,0,.50)"
                     onPointerUp={() => {
-                        // console.log("hello from", props.info.index, "and", props.select);
-                        props.setAnnotation(props.info.index);
-                        
-                        // change what camera is looking at
-                        // todo
 
                         // change camera location
                         const cam_pos = parseToCoords(props.info, true);
@@ -87,10 +72,10 @@ export default function Annotation(props){
                                 1000
                             )
                             .easing(JEASINGS.Cubic.Out)
-                            .onUpdate(() => {
-                                camera.lookAt(parseToCoords(props.info, false));
-                            })
                             .start();
+                        
+                        props.handleref.current = true;
+                        props.setAnnotation(props.info.index);
                     }}
                 />
                 <text x={props.i + 1 > 9 ? '8' : '12'} y="22" fill="white" fontSize={17} fontFamily="monospace" style={{ pointerEvents: 'none' }}>
