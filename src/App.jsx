@@ -64,6 +64,7 @@ function Scene(props) {
     const [annotationData, setAnnotationData] = useState();
     const [annotations, setAnnotations] = useState([]);
     const [selectedAnnotation, setSelectedAnnotation] = useState(-1);
+    // const [occlusionBox, setOcclusionBox] = useState();
 
     const moveList = useRef([]); // bc standard variable was always refreshed and stateful caused too many rerenders
     var undoIndex = useRef(-1);
@@ -95,7 +96,7 @@ function Scene(props) {
 
         const boundingBox = new THREE.Box3();
 
-        // // get bounding box of object
+        // get bounding box of object
         boundingBox.setFromObject(object);
 
         const {center, size} = getBoundsOfObject(object);
@@ -338,6 +339,29 @@ function Scene(props) {
             });
         }
 
+        // calculate cube in which annotations can be rendered
+        // if(camera){
+        //     const viewBox = new THREE.Box3();
+
+        //     // find midpoint between camera and center
+        //     const midpoint = new THREE.Vector3();
+        //     midpoint.addVectors(camera.position, new THREE.Vector3());
+
+        //     // get distance between camera and center
+        //     const dist = camera.position.distanceTo(new THREE.Vector3) / 2;
+        //     viewBox.setFromCenterAndSize(midpoint, new THREE.Vector3(dist, dist, dist));
+
+        //     // make box follow camera
+        //     const g = new THREE.BoxGeometry(viewBox.x, viewBox.y, viewBox.z);
+        //     const m = new THREE.MeshBasicMaterial({color: 0x00ff00});
+        //     const cube = new THREE.Mesh(g, m);
+        //     scene.add(cube);
+        //     setOcclusionBox(viewBox);
+        // }
+        // else{
+        //     console.log("camera was not detected in scene!");
+        // }
+
         // cleanup the event listener
         return function cleanup() {
             document.removeEventListener('keydown', handleKeyDown);
@@ -459,9 +483,10 @@ function Scene(props) {
             {props.getModel && <>
                     <primitive {...props} {...bind()} onPointerMissed = {() => { handleClickMiss() }} onClick = {(e) => { setSelectedAnnotation(-1); setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ () => { addMove(props.currSelect) } } object = {props.getModel} />
                     {annotations.map((o, index) => (
-                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} handleref={clickHandledRef} />
+                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} handleref={clickHandledRef} boxSize={props.hideAnno} /> 
                     ))}
                 </>}
+                {/* occluBox={occlusionBox} */}
             {!props.getModel &&  <>
                             <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
                             <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
@@ -588,6 +613,7 @@ export default function App() {
     const [paramAutoSpin, setParamAutoSpin] = useState(true);
     const [annotations, setAnnotations] = useState();
     const [stlmat, setStlMat] = useState(0xffffff);
+    const [hideDist, setHideDist] = useState(5);
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
@@ -830,6 +856,7 @@ export default function App() {
         const spin = searchParams.get("autospin");
         const jsonurl = searchParams.get("annotations");
         const stlColor = searchParams.get("STLmatCol");
+        const hiddenDist = searchParams.get("hideDistance");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -901,6 +928,9 @@ export default function App() {
         }
         if(stlColor){
             setStlMat("0x" + stlColor);
+        }
+        if(hiddenDist){
+            setHideDist(hiddenDist);
         }
 
         return () => {
@@ -1095,7 +1125,7 @@ export default function App() {
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} pieceSelect={selectPiece} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} pieceSelect={selectPiece} hideAnno={hideDist} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}

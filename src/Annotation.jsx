@@ -1,10 +1,13 @@
 import { Html } from '@react-three/drei';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import JEASINGS from 'https://esm.sh/jeasings';
 
 export default function Annotation(props){
+
+    var currPos = useRef(); // setting as state in below function causes infinite rerender
+    var occlusionBox = useRef(new THREE.Box3());
 
     function parseToCoords(info, useCam){
         // console.log(position);
@@ -18,6 +21,8 @@ export default function Annotation(props){
         }
         else{
             pos = [x, y, z];
+            currPos.current = pos;
+            occlusionBox.current.setFromCenterAndSize(new THREE.Vector3(pos[0], pos[1], pos[2]), new THREE.Vector3(props.boxSize, props.boxSize, props.boxSize));
         }
         // console.log(pos);
         return pos;
@@ -25,6 +30,21 @@ export default function Annotation(props){
 
     useFrame(() => {
         JEASINGS.update();
+        // if(!props.occluBox.containsPoint(currPos.current) && !hidden){
+        //     setHidden(true);
+        // }
+        // else if(props.occluBox.containsPoint(currPos.current) && hidden){
+        //     setHidden(false);
+        // }
+
+        if(occlusionBox.current.containsPoint(camera.position)){
+            // since camera is close to annotation
+            setHidden(false);
+        }
+        else if(hidden == false){
+            // hidden is false but camera not in occlusion box
+            setHidden(true);
+        }
     })
 
     const [hidden, setHidden] = useState();
