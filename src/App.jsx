@@ -69,6 +69,9 @@ function Scene(props) {
     const moveList = useRef([]); // bc standard variable was always refreshed and stateful caused too many rerenders
     var undoIndex = useRef(-1);
     const clickHandledRef = useRef(false); // to indicate whether the annotation has already handled the click condition, since race condition was occuring
+    var currSelectedNum = useRef(-2); // moved here bc react thinks its funny to constantly mount and remount my components
+    var sceneModel = useRef();
+    var iframe_id = useRef(-1);
 
     var useMouse = false;
     var plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -256,6 +259,7 @@ function Scene(props) {
 
     // handle a keypress here
     useEffect(() => {
+        const returnChannel = "*";
         function handleKeyDown(e) {
             // do action on key press
             // need to check if popup is open
@@ -298,15 +302,37 @@ function Scene(props) {
             }
         }
 
-        function returnState(){
-            console.log("access the scene variable and post message it back");
-            // if you were calling a function with it, i think it would look something like this:
-            // myFunc(scene)
+        function returnState(event){
+            // alert("return state hit!");
+            // const savedModel = JSON.parse(JSON.stringify(modelRef));
+            // console.log(props.currSelectIndex);
+            const modelStructureData = {
+                // model: savedModel,
+                // selectedIndex: props.selectedIndex(props.currSelect)
+                // selectedIndex: props.currSelectIndex
+                selectedIndex: currSelectedNum.current
+            }
+            window.parent.postMessage(
+                {modelStructureData},
+                returnChannel
+            );
         }
 
         const setScene = (event) => {
-            console.log("scene setting");
-            props.changeModel(event.currentTarget.value);
+            // console.log(event.data);
+            // const objectLoader = new THREE.ObjectLoader();
+            // const objectModel = objectLoader.parse(event.data.modelInfo.model);
+            // props.changeModel(objectModel);
+            // alert(event.data.modelInfo.selectedIndex);
+            // props.pieceSelect(event.data.modelInfo.selectedIndex);
+            const objToSelect = sceneModel.current.children[event.data.modelInfo.selectedIndex];
+            if(objToSelect){
+                setTarget(objToSelect);
+                selectedObj(objToSelect);
+            }
+            else{
+                console.log("index too large: " + index + " of maximum " + model.children.length);
+            }
         }
 
         const setAnnotations = (event) => {
@@ -314,11 +340,63 @@ function Scene(props) {
             setAnnotations(event.currentTarget.value);
         }
 
+        function receiveMessage(){
+            alert("Message received!");
+        }
+
         document.addEventListener('keydown', handleKeyDown);
 
-        window.addEventListener('getState', returnState);
-        window.addEventListener('setState', setScene);
-        window.addEventListener('setAnnotations', setAnnotations);
+        // window.addEventListener('save3DModel', returnState);
+        // window.addEventListener('load3DModel', setScene);
+        // window.addEventListener('setAnnotations', setAnnotations);
+        window.addEventListener('message', (event) => {
+            // console.log(event.data);
+            // alert("a post message appeared")
+            if(event.data === "save3DModel"){
+                returnState(event);
+            }
+            if(event.data.type === "load3DModel"){
+                // alert("received post message in load");
+                setScene(event);
+            }
+            if(event.data.message === "ready"){
+                // console.log("check ready");
+                iframe_id = event.data.id;
+                if(sceneModel.current){
+                    const currStatus = {
+                        info: "isReady",
+                        id: iframe_id,
+                        status: true
+                    }
+                    window.parent.postMessage(currStatus, returnChannel);
+                }
+                else{
+                    console.log(props.getModel);
+                    const currStatus = {
+                        info: "isReady",
+                        id: iframe_id,
+                        status: false
+                    }
+                    window.parent.postMessage(currStatus, returnChannel);
+                }
+            }
+            if(event.data === "pieceCount"){
+                if(sceneModel.current){
+                    const counts = {
+                        info: "count",
+                        num: sceneModel.current.children.length
+                    }
+                    window.parent.postMessage(counts, returnChannel);
+                }
+                else{
+                    const counts = {
+                        info: "count",
+                        num: -1
+                    }
+                    window.parent.postMessage(counts, returnChannel);
+                }
+            }
+        });
 
         // get list of annotations from json object
         if(props.jsonURL){
@@ -339,35 +417,13 @@ function Scene(props) {
             });
         }
 
-        // calculate cube in which annotations can be rendered
-        // if(camera){
-        //     const viewBox = new THREE.Box3();
-
-        //     // find midpoint between camera and center
-        //     const midpoint = new THREE.Vector3();
-        //     midpoint.addVectors(camera.position, new THREE.Vector3());
-
-        //     // get distance between camera and center
-        //     const dist = camera.position.distanceTo(new THREE.Vector3) / 2;
-        //     viewBox.setFromCenterAndSize(midpoint, new THREE.Vector3(dist, dist, dist));
-
-        //     // make box follow camera
-        //     const g = new THREE.BoxGeometry(viewBox.x, viewBox.y, viewBox.z);
-        //     const m = new THREE.MeshBasicMaterial({color: 0x00ff00});
-        //     const cube = new THREE.Mesh(g, m);
-        //     scene.add(cube);
-        //     setOcclusionBox(viewBox);
-        // }
-        // else{
-        //     console.log("camera was not detected in scene!");
-        // }
-
         // cleanup the event listener
         return function cleanup() {
             document.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('getState', returnState);
             window.removeEventListener('setState', setScene);
             window.removeEventListener('setAnnotations', setAnnotations);
+            window.removeEventListener('message', (event) => {console.log("logged message!!"); alert("Message received!")})
         }
     }, []);
 
@@ -400,6 +456,13 @@ function Scene(props) {
             setAnnotations(a);
         }
     }, [props.getModel, annotationData]); // since both model loading and fetching annotations is async
+
+    // is this hacky?
+    useEffect(() => {
+        if(props.getModel){
+            sceneModel.current = props.getModel;
+        }
+    }, [props.getModel]);
 
     useEffect(() => {
         // console.log("new index ", selectedAnnotation);
@@ -470,6 +533,22 @@ function Scene(props) {
         return boundingBox.getCenter(centerVec);
     }
 
+    function findObjectIndex(obj){
+        // const parent = findParentModel(model);
+        // theres a really weird bug here where model isnt defined when the tab key is used but in every other case it works fine. so this is my goofy workaround
+        for(let i = 0; i < modelRef.children.length; i++){
+            if(modelRef.children[i] === obj){
+                // setSelectedIndex(i);
+                console.log("selected", i);
+                currSelectedNum.current = i;
+                console.log(currSelectedNum.current);
+                // return i;
+                break;
+            }
+        }
+        // return -1;
+    }
+
     function handleClickMiss(){
         if(!clickHandledRef.current){
             setSelectedAnnotation(-1);
@@ -477,20 +556,23 @@ function Scene(props) {
         clickHandledRef.current = false; // reset whether handled or not   
     }
 
+    // props.selectedIndex(e.object);
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
-            {props.getModel && <>
-                    <primitive {...props} {...bind()} onPointerMissed = {() => { handleClickMiss() }} onClick = {(e) => { setSelectedAnnotation(-1); setTarget(e.object); selectedObj(e.object); props.selectedIndex(e.object); e.stopPropagation()} } onMouseUp={ () => { addMove(props.currSelect) } } object = {props.getModel} />
-                    {annotations.map((o, index) => (
-                        <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} handleref={clickHandledRef} boxSize={props.hideAnno} /> 
-                    ))}
-                </>}
-                {/* occluBox={occlusionBox} */}
-            {!props.getModel &&  <>
-                            <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
-                            <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
-                        </>}
+            {!props.modelHidden && <>
+                {props.getModel && <>
+                        <primitive {...props} {...bind()} onPointerMissed = {() => { handleClickMiss() }} onClick = {(e) => { setSelectedAnnotation(-1); setTarget(e.object); selectedObj(e.object); findObjectIndex(e.object); e.stopPropagation()} } onMouseUp={ () => { addMove(props.currSelect) } } object = {props.getModel} />
+                        {annotations.map((o, index) => (
+                            <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} handleref={clickHandledRef} boxSize={props.hideAnno} /> 
+                        ))}
+                    </>}
+                    {/* occluBox={occlusionBox} */}
+                {!props.getModel &&  <>
+                                <Icosahedron><meshStandardMaterial color="black" wireframe /></Icosahedron>
+                                <Icosahedron><meshStandardMaterial color="hotpink" /></Icosahedron>
+                            </>}
+            </>}
         </>
     );
 }
@@ -614,10 +696,11 @@ export default function App() {
     const [annotations, setAnnotations] = useState();
     const [stlmat, setStlMat] = useState(0xffffff);
     const [hideDist, setHideDist] = useState(5);
+    const [hideModel, setHideModel] = useState(false);
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
-    const [currSelectedNum, setSelectedIndex] = useState(-1);
+    // const [currSelectedNum, setSelectedIndex] = useState(-1);
     const [nameAttempt, setNameAttempt] = useState("");
     const [listShown, setShowList] = useState(false);
     // save data in login form here so its persistent
@@ -642,6 +725,8 @@ export default function App() {
     const [allowJigsaw, setAllowJigsaw] = useState(false);
     const [allowSelectPiece, setAllowSelectPiece] = useState(false);
     const [allowTextInput, setAllowTextInput] = useState(false);
+
+    // var currSelectedNum = useRef(-2);
 
     const callbackFunction = (childData, isUploaded, preview) => {
         // console.log(childData);
@@ -687,6 +772,7 @@ export default function App() {
 
     useEffect(() => {
         if(model){
+            // console.log(model);
             const newChildren = findParentModel(model).children;
             setNumChildren(newChildren.length);
             setChildren(newChildren);
@@ -857,6 +943,7 @@ export default function App() {
         const jsonurl = searchParams.get("annotations");
         const stlColor = searchParams.get("STLmatCol");
         const hiddenDist = searchParams.get("hideDistance");
+        const shouldHideModel = searchParams.get("hideModel");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -932,6 +1019,9 @@ export default function App() {
         if(hiddenDist){
             setHideDist(hiddenDist);
         }
+        if(shouldHideModel){
+            setHideModel(true);
+        }
 
         return () => {
             window.removeEventListener("showAdmin", showHideIcon);
@@ -942,7 +1032,9 @@ export default function App() {
     function selectPiece(index, deselect = true, color = 0xff0000){
         if(model){
             const objToSelect = model.children[index];
-            setSelectedIndex(index); // when selecting multiple, last index is the one that will be used for tabbing
+            // setSelectedIndex(index); // when selecting multiple, last index is the one that will be used for tabbing
+            // currSelectedNum.current = index;
+            // alert(index);
             if(objToSelect){
                 setTarget(objToSelect);
                 selectedObj(objToSelect, deselect, color);
@@ -950,6 +1042,9 @@ export default function App() {
             else{
                 console.log("index too large: " + index + " of maximum " + model.children.length);
             }
+        }
+        else{
+            console.log("No model loaded yet!");
         }
     }
 
@@ -1052,7 +1147,7 @@ export default function App() {
                     reconstructedObjs.add(objRef.uuid);
                     reconstrucScore += 1;
                     setReconstruct({...reconstruct, currScore: reconstrucScore});
-                    console.log("simulate post message with total correct " + reconstrucScore + " and total " + reconstruct.total);
+                    // console.log("simulate post message with total correct " + reconstrucScore + " and total " + reconstruct.total);
                     // console.log(objRef.uuid);
                     // console.log(reconstrucScore);
                 }
@@ -1067,7 +1162,7 @@ export default function App() {
                 if(reconstructedObjs.has(objRef.uuid)){
                     reconstructedObjs.delete(objRef.uuid);
                     reconstrucScore -= 1;
-                    console.log("simulate post message with total correct " + reconstrucScore + " and total " + reconstruct.total);
+                    // console.log("simulate post message with total correct " + reconstrucScore + " and total " + reconstruct.total);
                     // console.log("removed");
                     // console.log(reconstructedObjs);
                 }
@@ -1075,16 +1170,21 @@ export default function App() {
         }
     }
 
-    function findObjectIndex(obj){
-        // const parent = findParentModel(model);
-        // theres a really weird bug here where model isnt defined when the tab key is used but in every other case it works fine. so this is my goofy workaround
-        for(let i = 0; i < modelRef.children.length; i++){
-            if(modelRef.children[i] === obj){
-                setSelectedIndex(i);
-                break;
-            }
-        }
-    }
+    // function findObjectIndex(obj){
+    //     // const parent = findParentModel(model);
+    //     // theres a really weird bug here where model isnt defined when the tab key is used but in every other case it works fine. so this is my goofy workaround
+    //     for(let i = 0; i < modelRef.children.length; i++){
+    //         if(modelRef.children[i] === obj){
+    //             // setSelectedIndex(i);
+    //             console.log("selected", i);
+    //             currSelectedNum.current = i;
+    //             console.log(currSelectedNum.current);
+    //             // return i;
+    //             break;
+    //         }
+    //     }
+    //     // return -1;
+    // }
 
     const handleDropdownSelection = (index) => {
         // console.log(index);
@@ -1095,7 +1195,7 @@ export default function App() {
     }
 
     const handleSubmission = () => {
-        console.log("simulate post message with index " + currSelectedNum);
+        // console.log("simulate post message with index " + currSelectedNum);
         console.log("simulate post message with name attempt: " + nameAttempt);
     }
 
@@ -1112,7 +1212,7 @@ export default function App() {
                     React.createElement('button', {onClick : () => handleDropdownSelection(i)}, i)
                 ))
             }/>}
-            <Leva collapsed hidden={!model || model.children.length === 1 || showPanel} />
+            <Leva collapsed hidden={!model || model.children?.length === 1 || showPanel} />
             {target && allowTextInput && <>
                 <button className="clickable submit" onClick={handleSubmission}>Submit</button>
                 <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
@@ -1122,10 +1222,10 @@ export default function App() {
                 {/* <color attach="background" args={[BGColor]} /> */}
                 <color attach="background" args={[searchBGColor]} />
                 <Suspense fallback = {<Loader />}>
-                    {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active */}
+                    {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active selectedIndex={findObjectIndex} currSelectIndex={currSelectedNum.current} /}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} selectedIndex={findObjectIndex} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} pieceSelect={selectPiece} hideAnno={hideDist} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} pieceSelect={selectPiece} hideAnno={hideDist} modelHidden={hideModel} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}

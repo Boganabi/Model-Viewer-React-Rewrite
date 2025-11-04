@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import '@iframe-resizer/child'
+// import '@iframe-resizer/child'
 import './styles.css';
 import App from './App.jsx';
 import { BrowserRouter } from 'react-router-dom';
@@ -12,6 +12,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <BrowserRouter>
             <App />
         </BrowserRouter>
+        {/* <script
+            async
+            src="/node_modules/@iframe-resizer/child/index.umd.js"
+        ></script> */}
     </React.StrictMode>
 )
 
