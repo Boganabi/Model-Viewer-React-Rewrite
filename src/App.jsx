@@ -269,7 +269,7 @@ function Scene(props) {
                 // const parent = findParentModel(props.getModel);
                 const parent = findParentModel(modelRef);
                 const childIndex = doKey(e, parent, camera, scene, objRef, RATE);
-                if(childIndex >= 0){
+                if(childIndex >= 0 && props.allowClick){
                     // need to get the parent object of all children
                     const newSelectedObject = parent.children[childIndex]
                     selectedObj(newSelectedObject);
@@ -556,15 +556,32 @@ function Scene(props) {
         clickHandledRef.current = false; // reset whether handled or not   
     }
 
+    function sendSelected(obj){
+        const idx = findObjectIndex(obj);
+        const msg = {
+            id: iframe_id,
+            selected: idx
+        }
+        window.parent.postMessage(msg, "*");
+    }
+
+    function handleClick(e){
+        setSelectedAnnotation(-1); 
+        setTarget(e.object); 
+        selectedObj(e.object); 
+        findObjectIndex(e.object); 
+        sendSelected(e.object);
+    }
+
     // props.selectedIndex(e.object);
     // add this to the primitive model line to set pointer (causes lag spike): onPointerOver = {() => { if(hovered == false) setHovered(true) }} onPointerOut = {() => { if(hovered == true) setHovered(false) }}
     return (
         <>
             {!props.modelHidden && <>
                 {props.getModel && <>
-                        <primitive {...props} {...bind()} onPointerMissed = {() => { handleClickMiss() }} onClick = {(e) => { setSelectedAnnotation(-1); setTarget(e.object); selectedObj(e.object); findObjectIndex(e.object); e.stopPropagation()} } onMouseUp={ () => { addMove(props.currSelect) } } object = {props.getModel} />
+                        <primitive {...props} {...bind()} onPointerMissed = {() => { if(props.allowClick){ handleClickMiss() } }} onClick = {(e) => { if(props.allowClick){ handleClick(e); e.stopPropagation() }} } onMouseUp={ () => { if(props.allowClick){ addMove(props.currSelect) }} } object = {props.getModel} />
                         {annotations.map((o, index) => (
-                            <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} handleref={clickHandledRef} boxSize={props.hideAnno} /> 
+                            <Annotation key={index} i={index} info={o} select={selectedAnnotation} setAnnotation={setSelectedAnnotation} cam={camera} handleref={clickHandledRef} boxSize={props.hideAnno} allowSelected={props.allowClick} /> 
                         ))}
                     </>}
                     {/* occluBox={occlusionBox} */}
@@ -697,6 +714,8 @@ export default function App() {
     const [stlmat, setStlMat] = useState(0xffffff);
     const [hideDist, setHideDist] = useState(5);
     const [hideModel, setHideModel] = useState(false);
+    const [controlButtonShow, setShowControlButton] = useState(true);
+    const [allowSelect, setAllowSelect] = useState(true);
 
     const [model, setModel] = useState();
     const [backgroundurl, setbackgroundurl] = useState();
@@ -944,6 +963,8 @@ export default function App() {
         const stlColor = searchParams.get("STLmatCol");
         const hiddenDist = searchParams.get("hideDistance");
         const shouldHideModel = searchParams.get("hideModel");
+        const hideControlsButton = searchParams.get("hideControlsButton");
+        const allowSelection = searchParams.get("allowSelection");
 
         // searchParams.forEach((param) => {
         //     console.log(param);
@@ -1021,6 +1042,12 @@ export default function App() {
         }
         if(shouldHideModel){
             setHideModel(true);
+        }
+        if(hideControlsButton){
+            setShowControlButton(false);
+        }
+        if(allowSelection){
+            setAllowSelect(false);
         }
 
         return () => {
@@ -1217,7 +1244,7 @@ export default function App() {
                 <button className="clickable submit" onClick={handleSubmission}>Submit</button>
                 <input placeholder="Enter name of this piece..." onChange={event => setNameAttempt(event.target.value)} className='nameentry' onFocus={() => enableDisableKeys(false)} onBlur={() => enableDisableKeys(true)} />
             </>}
-            <Controls />
+            {controlButtonShow && <Controls /> }
             <Canvas gl={{ preserveDrawingBuffer: true }} dpr = {[1, 2]} onPointerMissed = {() => { setTarget(null); selectedObj(null); }}>
                 {/* <color attach="background" args={[BGColor]} /> */}
                 <color attach="background" args={[searchBGColor]} />
@@ -1225,7 +1252,7 @@ export default function App() {
                     {/* TransformControls is not playing nice with postprocessing so i need to disable postprocessing when controls are active selectedIndex={findObjectIndex} currSelectIndex={currSelectedNum.current} /}
                     {/* {!TransformControls.visible &&  */}
                     <Select enabled for="SSR">
-                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} pieceSelect={selectPiece} hideAnno={hideDist} modelHidden={hideModel} />
+                        <Scene modelURL={checkedURL} ext={extension} imgName={img} test={widgetShown} changeModel={setModel} getModel={model} currSelect={target} popupOpen={popupIsOpen} backend={BACKEND} snap={checkSnapObject} modelOffset={searchModelOffset} camOffset={searchCameraOffset} doControls={setEnableControls} changeAutoRot={setAutoRot} menuMouse={useMouse} stlMatColor={stlmat} jsonURL={annotations} pieceSelect={selectPiece} hideAnno={hideDist} modelHidden={hideModel} allowClick={allowSelect} />
                         <Effects enabled={enableHDRI} location={backgroundurl} />
                     </Select>
                     {target && enableContrls && <TransformControls object = {target} mode = {mode} onChange={() => checkSnapObject()} onMouseUp={() => { setCanRotate(true) }} onMouseDown={() => { setCanRotate(false); setAutoRot(false); }} showX={showTransformControls} showY={showTransformControls} showZ={showTransformControls} />}

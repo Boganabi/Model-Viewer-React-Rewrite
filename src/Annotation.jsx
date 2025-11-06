@@ -80,22 +80,24 @@ export default function Annotation(props){
                     fill="rgba(0,0,0,.50)"
                     onPointerUp={() => {
 
-                        // change camera location
-                        const cam_pos = parseToCoords(props.info, true);
-                        new JEASINGS.JEasing(camera.position)
-                            .to(
-                                {
-                                    x: cam_pos.x,
-                                    y: cam_pos.y,
-                                    z: cam_pos.z
-                                },
-                                1000
-                            )
-                            .easing(JEASINGS.Cubic.Out)
-                            .start();
-                        
-                        props.handleref.current = true;
-                        props.setAnnotation(props.info.index);
+                        if(props.allowSelected){
+                            // change camera location
+                            const cam_pos = parseToCoords(props.info, true);
+                            new JEASINGS.JEasing(camera.position)
+                                .to(
+                                    {
+                                        x: cam_pos.x,
+                                        y: cam_pos.y,
+                                        z: cam_pos.z
+                                    },
+                                    1000
+                                )
+                                .easing(JEASINGS.Cubic.Out)
+                                .start();
+
+                            props.handleref.current = true;
+                            props.setAnnotation(props.info.index);
+                        }
                     }}
                 />
                 <text x={props.i + 1 > 9 ? '8' : '12'} y="22" fill="white" fontSize={17} fontFamily="monospace" style={{ pointerEvents: 'none' }}>
