@@ -417,6 +417,22 @@ function Scene(props) {
             });
         }
 
+        // iframeresizer stuff
+        window.iFrameResizer = {
+            onReady: () => {
+                console.log("ready! from child iframe");
+            },
+        }
+
+        if("parent" in window){
+            console.log(window);
+            // parent.resizeTo(1000, 600);
+            // parent.setOffsetSize(600);
+        }
+        else{
+            console.log(window);
+        }
+
         // cleanup the event listener
         return function cleanup() {
             document.removeEventListener('keydown', handleKeyDown);
@@ -539,9 +555,9 @@ function Scene(props) {
         for(let i = 0; i < modelRef.children.length; i++){
             if(modelRef.children[i] === obj){
                 // setSelectedIndex(i);
-                console.log("selected", i);
+                // console.log("selected", i);
                 currSelectedNum.current = i;
-                console.log(currSelectedNum.current);
+                // console.log(currSelectedNum.current);
                 // return i;
                 break;
             }
