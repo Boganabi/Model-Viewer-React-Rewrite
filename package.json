@@ -11,8 +11,6 @@
     "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
-    "@iframe-resizer/child": "^5.4.6",
-    "@iframe-resizer/parent": "^5.5.7",
     "@react-three/drei": "^9.111.3",
     "@react-three/fiber": "^8.17.6",
     "@react-three/postprocessing": "^2.16.2",
