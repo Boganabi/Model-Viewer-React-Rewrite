@@ -61,14 +61,27 @@ pool.connect((err, client, release) => {
     })
 })
 
-app.get('/api/testdata', (req, res, next) => {
-    const id = req.query["id"];
-    console.log("TEST DATA :");
-    pool.query('SELECT filecall, labels FROM test WHERE id=' + id)
+// These endpoints are dev/test only and must never be reachable in production.
+const blockInProd = (req, res, next) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ error: 'Endpoint disabled in production' });
+    }
+    next();
+};
+
+app.get('/api/testdata', blockInProd, (req, res, next) => {
+    const { id } = req.query;
+    if (!/^\d+$/.test(String(id))) {
+        return res.status(400).json({ error: 'Invalid id' });
+    }
+    pool.query('SELECT filecall, labels FROM test WHERE id = $1', [id])
         .then(testData => {
-            console.log(testData);
             res.send(testData.rows);
         })
+        .catch(e => {
+            console.error(e);
+            res.status(500).json({ error: 'Query failed' });
+        });
 })
 
 app.get('/api/getall', (req, res, next) => {
@@ -82,17 +95,29 @@ app.get('/api/getall', (req, res, next) => {
 })
 
 // handle database insert
-app.post('/api/testdata', (req, res, next) => {
+app.post('/api/testdata', blockInProd, (req, res, next) => {
     const name = req.query["filename"];
     const preview = req.query['image'];
     const classname = req.query['classtype'];
-    const fixedName = name.split(".")[0];
+    if (!name) {
+        return res.status(400).json({ error: 'Missing filename' });
+    }
+    const fixedName = String(name).split(".")[0];
+    // NOTE: labels is still coerced from a raw string into a Postgres array literal.
+    // Validate/rebuild it from an allow-listed list before trusting it fully.
     const labels = req.query["labels"] === "undefined" ? '{}' : '{' + req.query["labels"] + '}';
-    console.log(labels);
-    pool.query('INSERT INTO test (filename, filecall, preview, classType, labels) VALUES (\'' + fixedName + '\', \'models/' + name + '.glb\', \'images/' + preview + '.png\', \'' + classname + '\', \'' + labels + '\');')
+    pool.query(
+        `INSERT INTO test (filename, filecall, preview, classType, labels)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [fixedName, `models/${name}.glb`, `images/${preview}.png`, classname, labels]
+    )
         .then(result => {
             res.send("Uploaded successfully");
         })
+        .catch(e => {
+            console.error(e);
+            res.status(500).json({ error: 'Insert failed' });
+        });
 })
 
 // handles file uploads with multer
