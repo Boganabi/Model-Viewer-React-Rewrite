@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
+const path = require('path');
 
 // creates an Express application, and express() is a top-level function from express module
 
@@ -19,8 +20,21 @@ const pool = new Pool({
     port: 5432
 });
 
-const upload = multer({ dest: './../public/images/' });
-const modelUpload = multer({ dest: './../public/models/'});
+const upload = multer({ dest: './../public/images/', limits: { fileSize: 10 * 1024 * 1024 } });
+const modelUpload = multer({ dest: './../public/models/', limits: { fileSize: 25 * 1024 * 1024 } });
+
+// Resolved upload roots and a helper to confine a client-supplied name to that root.
+// Strips any path components, blocks traversal, and enforces an extension allowlist.
+const imagesBase = path.resolve(__dirname, '../public/images');
+const modelsBase = path.resolve(__dirname, '../public/models');
+
+function safeUploadTarget(base, rawName, allowedExt) {
+    const safeName = path.basename(String(rawName || ''));
+    if (!safeName || !allowedExt.test(safeName)) return null;
+    const target = path.resolve(base, safeName);
+    if (target !== base && !target.startsWith(base + path.sep)) return null;
+    return target;
+}
 
 // app.use(function(req, res, next) {
 //     // res.header('Access-Control-Allow-Origin', '*');
@@ -123,29 +137,47 @@ app.post('/api/testdata', blockInProd, (req, res, next) => {
 // handles file uploads with multer
 app.post('/api/upload', upload.single('image'), (req, res, next) => {
     console.log("in image upload");
-    const imageName = req.file;
-    const originalName = req.body.filename;
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-    fs.rename(req.file.path, __dirname + '/../public/images/' + originalName, (err) => {
-        // if(err) throw err; 
-        console.log("\nFile renamed to " + originalName); 
-        res.send({imageName});
+    const imageName = req.file;
+    const target = safeUploadTarget(imagesBase, req.body.filename, /\.(png|jpe?g|webp|gif)$/i);
+    if (!target) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    fs.rename(req.file.path, target, (err) => {
+        if (err) {
+            console.error('Image rename failed', err);
+            fs.unlink(req.file.path, () => {});
+            return res.status(500).json({ error: 'Upload failed' });
+        }
+        console.log("\nFile renamed to " + path.basename(target));
+        res.send({ imageName });
     });
 })
 
 // handle new model
 app.post('/api/uploadmodel', modelUpload.single('model'), (req, res, next) => {
     console.log("in model upload");
-    console.log(req.file);
-    console.log(req.file.path);
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
     const modelName = req.file;
-    const originalName = req.body.modelname;
+    const target = safeUploadTarget(modelsBase, req.body.modelname, /\.(glb|obj|stl)$/i);
+    if (!target) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ error: 'Invalid filename' });
+    }
 
     // rename model filepath
-    fs.rename(req.file.path, __dirname + '/../public/models/' + originalName, (err) => {
-        if(err) throw err; 
-        console.log("\nFile renamed to " + originalName); 
-        res.send({modelName});
+    fs.rename(req.file.path, target, (err) => {
+        if (err) {
+            console.error('Model rename failed', err);
+            fs.unlink(req.file.path, () => {});
+            return res.status(500).json({ error: 'Upload failed' });
+        }
+        console.log("\nFile renamed to " + path.basename(target));
+        res.send({ modelName });
     });
 })
 
